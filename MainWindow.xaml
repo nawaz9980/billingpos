@@ -1,0 +1,30 @@
+<Window x:Class="QuickPos.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:components="clr-namespace:QuickPos.Components"
+        Title="QuickPOS - Point of Sale (.NET 10 WPF)"
+        Height="780" Width="1220"
+        MinHeight="640" MinWidth="1000"
+        WindowStartupLocation="CenterScreen"
+        WindowState="Maximized"
+        Background="#F8FAFC"
+        PreviewKeyDown="Window_PreviewKeyDown">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <!-- Top Menu Bar (56px) -->
+            <RowDefinition Height="Auto"/>
+            <!-- Active Screen Container -->
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- TOP BAR MENU -->
+        <components:TopMenuBar Grid.Row="0" x:Name="TopNav"/>
+
+        <!-- DYNAMIC SCREEN CONTAINER -->
+        <ContentControl Grid.Row="1" x:Name="MainContentFrame"/>
+
+        <!-- MODAL OVERLAY CONTAINER (keeps previous screen visible underneath) -->
+        <ContentControl Grid.Row="1" x:Name="ModalOverlayFrame" Visibility="Collapsed"/>
+    </Grid>
+</Window>

@@ -1,0 +1,246 @@
+<UserControl x:Class="QuickPos.Screens.DashboardScreen"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <UserControl.Resources>
+        <!-- Style for menu links on the right panel: bolder and slightly larger font -->
+        <Style x:Key="PosMenuItemBtn" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="#0F172A"/>
+            <Setter Property="FontSize" Value="13.5"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="12,4"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#B9DCEB"/>
+                                <Setter Property="Foreground" Value="#003366"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Gold Toggle Header Button Style -->
+        <Style x:Key="GoldHeaderToggleBtn" TargetType="Button">
+            <Setter Property="Background" Value="#D4AE18"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="10,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="hdrBd" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="hdrBd" Property="Background" Value="#E0BC24"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <!-- Left & Center: Wallpaper / Retail Display & Branding (stretched) -->
+            <ColumnDefinition Width="*"/>
+            <!-- Right: Recently Viewed & Favourite Menus (320px wide) -->
+            <ColumnDefinition Width="320"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ══════════════ LEFT & CENTER: WALLPAPER & BRANDING ══════════════ -->
+        <Grid Grid.Column="0">
+            <!-- Background Gradient -->
+            <Grid.Background>
+                <RadialGradientBrush Center="0.5,0.45" GradientOrigin="0.5,0.45" RadiusX="0.8" RadiusY="0.8">
+                    <GradientStop Color="#4A657A" Offset="0.0"/>
+                    <GradientStop Color="#2B3A48" Offset="0.55"/>
+                    <GradientStop Color="#1A2530" Offset="1.0"/>
+                </RadialGradientBrush>
+            </Grid.Background>
+
+            <!-- Subtle Hexagonal Pattern / Shapes -->
+            <Canvas HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,30,80,0" Opacity="0.15">
+                <Polygon Points="30,0 90,0 120,52 90,104 30,104 0,52" Stroke="#FFFFFF" StrokeThickness="2" Fill="Transparent"/>
+                <Polygon Canvas.Left="70" Canvas.Top="45" Points="30,0 90,0 120,52 90,104 30,104 0,52" Stroke="#FFFFFF" StrokeThickness="2" Fill="Transparent"/>
+                <Polygon Canvas.Left="-50" Canvas.Top="60" Points="30,0 90,0 120,52 90,104 30,104 0,52" Stroke="#FFFFFF" StrokeThickness="1.5" Fill="Transparent"/>
+            </Canvas>
+
+            <!-- Left Retail Rack / Carousel Illustration -->
+            <Grid HorizontalAlignment="Left" VerticalAlignment="Center" Margin="50,0,0,30" Width="220" Height="420">
+                <Rectangle Width="6" Height="360" Fill="#C0D3E2" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,15,0,0"/>
+                <Border Width="34" Height="14" Background="#FFFFFF" BorderBrush="#94A3B8" BorderThickness="1" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+                
+                <!-- Tier 1 Cards -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,40,0,0">
+                    <Border Width="65" Height="85" Background="#FDE047" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Margin="4,0">
+                        <TextBlock Text="🏷️ SALE&#x0a;50% OFF" FontSize="11" FontWeight="Bold" Foreground="#854D0E" TextAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <Border Width="65" Height="85" Background="#F472B6" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Margin="4,0">
+                        <TextBlock Text="🎁 GIFT&#x0a;CARDS" FontSize="11" FontWeight="Bold" Foreground="#831843" TextAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </StackPanel>
+
+                <!-- Tier 2 Cards -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,140,0,0">
+                    <Border Width="65" Height="85" Background="#60A5FA" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Margin="4,0">
+                        <TextBlock Text="☕ CAFE&#x0a;SPECIAL" FontSize="11" FontWeight="Bold" Foreground="#1E3A8A" TextAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <Border Width="65" Height="85" Background="#34D399" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Margin="4,0">
+                        <TextBlock Text="🧾 BILLING&#x0a;REGISTER" FontSize="11" FontWeight="Bold" Foreground="#064E3B" TextAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </StackPanel>
+
+                <!-- Tier 3 Cards -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,240,0,0">
+                    <Border Width="65" Height="85" Background="#A78BFA" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Margin="4,0">
+                        <TextBlock Text="📦 STOCK&#x0a;UPDATE" FontSize="11" FontWeight="Bold" Foreground="#4C1D95" TextAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <Border Width="65" Height="85" Background="#F87171" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Margin="4,0">
+                        <TextBlock Text="⭐ VIP&#x0a;MEMBER" FontSize="11" FontWeight="Bold" Foreground="#7F1D1D" TextAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </StackPanel>
+
+                <Polygon Points="30,20 190,20 210,50 10,50" Stroke="#CBD5E1" StrokeThickness="2.5" Fill="Transparent" VerticalAlignment="Bottom" HorizontalAlignment="Center"/>
+            </Grid>
+
+            <!-- Center Branding (GoFrugal / QuickPOS 10 Style) -->
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="140,0,0,40">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,4">
+                    <TextBlock Text="■ " Foreground="#EF4444" FontSize="18" FontWeight="Bold"/>
+                    <TextBlock Text="■ " Foreground="#3B82F6" FontSize="18" FontWeight="Bold"/>
+                    <TextBlock Text="■ " Foreground="#10B981" FontSize="18" FontWeight="Bold"/>
+                    <TextBlock Text="QuickPOS" Foreground="#FFFFFF" FontSize="26" FontWeight="ExtraBold" FontStyle="Italic"/>
+                </StackPanel>
+                
+                <TextBlock Text="CONNECTING BUSINESS DIGITALLY" Foreground="#D1D5DB" FontSize="12.5" FontWeight="Bold"
+                           HorizontalAlignment="Center" Margin="0,0,0,16"/>
+
+                <!-- Giant 3D Gold Title -->
+                <Grid HorizontalAlignment="Center">
+                    <TextBlock Text="RPOS 10" FontSize="84" FontWeight="Black" Margin="4,4,0,0">
+                        <TextBlock.Foreground>
+                            <SolidColorBrush Color="#000000" Opacity="0.55"/>
+                        </TextBlock.Foreground>
+                    </TextBlock>
+                    <TextBlock Text="RPOS 10" FontSize="84" FontWeight="Black">
+                        <TextBlock.Foreground>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                <GradientStop Color="#FFF4B8" Offset="0.0"/>
+                                <GradientStop Color="#FFD700" Offset="0.45"/>
+                                <GradientStop Color="#FFA500" Offset="0.75"/>
+                                <GradientStop Color="#B8860B" Offset="1.0"/>
+                            </LinearGradientBrush>
+                        </TextBlock.Foreground>
+                    </TextBlock>
+                </Grid>
+
+                <!-- Quick Action "Open Sales Bill" pill button -->
+                <Button Content="▶  Open Sales Bill" Background="#FFD700" Foreground="#000000"
+                        FontWeight="Bold" FontSize="14" Padding="22,9" Margin="0,20,0,0"
+                        Cursor="Hand" HorizontalAlignment="Center" Click="SalesBill_Click">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="18" Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </StackPanel>
+
+            <!-- Bottom Footer Links -->
+            <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="140,0,0,16">
+                <TextBlock Text="www.quickpos.com" Foreground="#CBD5E1" FontSize="12" HorizontalAlignment="Center"/>
+                <TextBlock Text="© QuickPOS Technologies. All rights reserved" Foreground="#94A3B8" FontSize="10.5" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- ══════════════ RIGHT SIDE: RECENTLY VIEWED & FAVOURITE MENUS ══════════════ -->
+        <Border Grid.Column="1" Background="#D8EBF4" BorderBrush="#B2D0E0" BorderThickness="1,0,0,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <!-- Top Section: Recently Viewed Menus -->
+                    <RowDefinition x:Name="RowRecentlyViewed" Height="*"/>
+                    <!-- Bottom Section: Favourite Menus -->
+                    <RowDefinition x:Name="RowFavourite" Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- ── 1. RECENTLY VIEWED MENUS (TOGGLEABLE) ── -->
+                <DockPanel Grid.Row="0">
+                    <!-- Gold Header Toggle Button -->
+                    <Button DockPanel.Dock="Top" Style="{StaticResource GoldHeaderToggleBtn}" Click="ToggleRecentlyViewed_Click">
+                        <Grid>
+                            <TextBlock Text="Recently Viewed Menus" Foreground="#000000" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="ArrowRecentlyViewed" Text="▲" Foreground="#000000" FontSize="12" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Button>
+
+                    <!-- Scrollable Menus List -->
+                    <ScrollViewer x:Name="ContentRecentlyViewed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Margin="0,4,0,4">
+                            <!-- Direct Screen Links -->
+                            <Button Content="Sales bill" Style="{StaticResource PosMenuItemBtn}" Foreground="#003366" Click="SalesBill_Click"/>
+                            <Button Content="Configuration" Style="{StaticResource PosMenuItemBtn}" Click="Settings_Click"/>
+                            <Button Content="Items" Style="{StaticResource PosMenuItemBtn}" Click="Items_Click"/>
+                            <Button Content="Customer Master" Style="{StaticResource PosMenuItemBtn}" Click="Customers_Click"/>
+                            <Button Content="Themes and Wallpaper" Style="{StaticResource PosMenuItemBtn}" Click="MenuItem_Click"/>
+                            <Button Content="Purge Transactions Data" Style="{StaticResource PosMenuItemBtn}" Click="MenuItem_Click"/>
+                            <Button Content="Practice data clean up" Style="{StaticResource PosMenuItemBtn}" Click="MenuItem_Click"/>
+                            <Button Content="Tender" Style="{StaticResource PosMenuItemBtn}" Click="MenuItem_Click"/>
+                            <Button Content="Log off" Style="{StaticResource PosMenuItemBtn}" Click="MenuItem_Click"/>
+                            <Button Content="Sales Return" Style="{StaticResource PosMenuItemBtn}" Click="SalesBill_Click"/>
+                            <Button Content="Stock Updation" Style="{StaticResource PosMenuItemBtn}" Click="Inventory_Click"/>
+                            <Button Content="Device settings" Style="{StaticResource PosMenuItemBtn}" Click="Settings_Click"/>
+                            <Button Content="Transfer In" Style="{StaticResource PosMenuItemBtn}" Click="Inventory_Click"/>
+                            <Button Content="About QuickPOS" Style="{StaticResource PosMenuItemBtn}" Click="MenuItem_Click"/>
+                            <Button Content="Opening Stock Entry" Style="{StaticResource PosMenuItemBtn}" Click="Inventory_Click"/>
+                            <Button Content="Matrix Extension" Style="{StaticResource PosMenuItemBtn}" Click="MenuItem_Click"/>
+                            <Button Content="Receipt Note" Style="{StaticResource PosMenuItemBtn}" Click="SalesBill_Click"/>
+                            <Button Content="Delivery Note" Style="{StaticResource PosMenuItemBtn}" Click="SalesBill_Click"/>
+                            <Button Content="Financial Accounts" Style="{StaticResource PosMenuItemBtn}" Click="MenuItem_Click"/>
+                            <Button Content="Item BarCode Printing" Style="{StaticResource PosMenuItemBtn}" Click="Items_Click"/>
+                            <Button Content="Security manager" Style="{StaticResource PosMenuItemBtn}" Click="Settings_Click"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
+
+                <!-- ── 2. FAVOURITE MENUS (TOGGLEABLE) ── -->
+                <DockPanel Grid.Row="1" Background="#D8EBF4">
+                    <!-- Gold Header Toggle Button with Stars -->
+                    <Button DockPanel.Dock="Top" Style="{StaticResource GoldHeaderToggleBtn}" Click="ToggleFavourite_Click">
+                        <Grid>
+                            <TextBlock Text="Favourite Menus" Foreground="#000000" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <TextBlock Text="★ ★" Foreground="#92400E" FontSize="11" FontWeight="Bold" Margin="0,0,6,0"/>
+                                <TextBlock x:Name="ArrowFavourite" Text="▲" Foreground="#000000" FontSize="12" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Grid>
+                    </Button>
+
+                    <!-- Favourite Links -->
+                    <StackPanel x:Name="ContentFavourite" Margin="0,4,0,8">
+                        <Button Content="Consignment Stock Details -" Style="{StaticResource PosMenuItemBtn}" Click="Inventory_Click"/>
+                        <Button Content="Item wise" Style="{StaticResource PosMenuItemBtn}" Click="Items_Click"/>
+                        <Button Content="Area List" Style="{StaticResource PosMenuItemBtn}" Click="MenuItem_Click"/>
+                    </StackPanel>
+                </DockPanel>
+
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

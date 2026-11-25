@@ -1,0 +1,513 @@
+<UserControl x:Class="QuickPos.Screens.PurchaseInvoiceScreen"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:components="clr-namespace:QuickPos.Components"
+             Background="#F1F5F9"
+             Focusable="True"
+             Loaded="UserControl_Loaded"
+             PreviewKeyDown="UserControl_PreviewKeyDown">
+
+    <UserControl.Resources>
+        <!-- Blue/Indigo Label Cell Style -->
+        <Style x:Key="FormLabelBorder" TargetType="Border">
+            <Setter Property="Background" Value="#EEF2FF"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+            <Setter Property="Padding" Value="6,0"/>
+        </Style>
+
+        <Style x:Key="FormLabelText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#1E1B4B"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="FormInputBorder" TargetType="Border">
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+        </Style>
+
+        <Style x:Key="FormInputBox" TargetType="TextBox">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="Foreground" Value="#0F172A"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="5,2"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Style.Triggers>
+                <Trigger Property="IsFocused" Value="True">
+                    <Setter Property="Background" Value="#FEF3C7"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- DataGrid Column Header matching Blue/Indigo theme -->
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="#4F46E5"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Padding" Value="6,5"/>
+            <Setter Property="BorderBrush" Value="#4338CA"/>
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+        </Style>
+
+        <!-- Clean Cell Selection -->
+        <Style TargetType="DataGridRow">
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#F8FAFC"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="DataGridCell">
+            <Setter Property="Padding" Value="4,2"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#4F46E5"/>
+                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Bottom F-Key Button Style -->
+        <Style x:Key="FKeyBtn" TargetType="Button">
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="b" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#EFF6FF"/>
+                                <Setter TargetName="b" Property="BorderBrush" Value="#3B82F6"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <!-- Row 0: Top 3-Column Purchase / GRN Header -->
+            <RowDefinition Height="Auto"/>
+            <!-- Row 1: Purchase Items DataGrid -->
+            <RowDefinition Height="*"/>
+            <!-- Row 2: Lower Cost / Tax / Total Strip + Narration -->
+            <RowDefinition Height="Auto"/>
+            <!-- Row 3: Function Keys Toolbar -->
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ══════════════ ROW 0: TOP 3-COLUMN GRN & INVOICE HEADER ══════════════ -->
+        <Border Grid.Row="0" Background="#FFFFFF" BorderBrush="#94A3B8" BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <!-- Left: Distributor & GRN Type -->
+                    <ColumnDefinition Width="1.4*"/>
+                    <!-- Middle: GRN & Invoice Meta -->
+                    <ColumnDefinition Width="1.05*"/>
+                    <!-- Right: Summary Amounts Table -->
+                    <ColumnDefinition Width="1.05*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- ──── LEFT BLOCK: Distributor & Type ──── -->
+                <Grid Grid.Column="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="85"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="72"/>
+                        <ColumnDefinition Width="85"/>
+                        <ColumnDefinition Width="115"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="26"/>
+                        <RowDefinition Height="26"/>
+                        <RowDefinition Height="26"/>
+                        <RowDefinition Height="26"/>
+                        <RowDefinition Height="26"/>
+                        <RowDefinition Height="26"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Row 0: Grn Type -->
+                    <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource FormLabelBorder}">
+                        <TextBlock Text="Grn Type" Style="{StaticResource FormLabelText}"/>
+                    </Border>
+                    <Border Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="4" Style="{StaticResource FormInputBorder}">
+                        <ComboBox x:Name="CmbGrnType" BorderThickness="0" Background="#4F46E5" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12" SelectedIndex="0" VerticalContentAlignment="Center">
+                            <ComboBoxItem Content="Direct" Foreground="#0F172A"/>
+                            <ComboBoxItem Content="Against PO" Foreground="#0F172A"/>
+                        </ComboBox>
+                    </Border>
+
+                    <!-- Row 1: Dist. Code | Parcel No | Tax Exclusive/Inclusive -->
+                    <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource FormLabelBorder}">
+                        <TextBlock Text="Dist. Code" Style="{StaticResource FormLabelText}"/>
+                    </Border>
+                    <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource FormInputBorder}">
+                        <TextBox x:Name="TxtDistCode" Style="{StaticResource FormInputBox}" PreviewKeyDown="TxtDistCode_PreviewKeyDown"/>
+                    </Border>
+                    <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource FormLabelBorder}">
+                        <TextBlock Text="Parcel No" Style="{StaticResource FormLabelText}"/>
+                    </Border>
+                    <Border Grid.Row="1" Grid.Column="3" Style="{StaticResource FormInputBorder}">
+                        <TextBox x:Name="TxtParcelNo" Style="{StaticResource FormInputBox}"/>
+                    </Border>
+                    <Border Grid.Row="1" Grid.Column="4" Background="#EEF2FF" BorderBrush="#CBD5E1" BorderThickness="0,0,1,1" Padding="6,0">
+                        <TextBlock x:Name="TxtTaxModeBadge" Text="Tax Exclusive" Foreground="#4338CA" FontWeight="Bold" FontSize="11.5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    </Border>
+
+                    <!-- Row 2: Pur. Type | More Options -->
+                    <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource FormLabelBorder}">
+                        <TextBlock Text="Pur. Type" Style="{StaticResource FormLabelText}"/>
+                    </Border>
+                    <Border Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" Style="{StaticResource FormInputBorder}">
+                        <ComboBox x:Name="CmbPurType" BorderThickness="0" Background="#FFFFFF" FontSize="11.5" FontWeight="SemiBold" SelectedIndex="0" VerticalContentAlignment="Center">
+                            <ComboBoxItem Content="CR - CREDIT PURCHASE"/>
+                            <ComboBoxItem Content="CA - CASH PURCHASE"/>
+                        </ComboBox>
+                    </Border>
+                    <Border Grid.Row="2" Grid.Column="4" Style="{StaticResource FormInputBorder}" Padding="2">
+                        <Button Content="More Options &gt;&gt;" Background="#EEF2FF" Foreground="#4338CA" BorderBrush="#C7D2FE" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand" Click="AddItem_Click"/>
+                    </Border>
+
+                    <!-- Row 3: Dist Name -->
+                    <Border Grid.Row="3" Grid.Column="0" Style="{StaticResource FormLabelBorder}">
+                        <TextBlock Text="Dist Name" Style="{StaticResource FormLabelText}"/>
+                    </Border>
+                    <Border Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="4" Style="{StaticResource FormInputBorder}">
+                        <TextBox x:Name="TxtDistName" Style="{StaticResource FormInputBox}"/>
+                    </Border>
+
+                    <!-- Row 4: Address -->
+                    <Border Grid.Row="4" Grid.Column="0" Style="{StaticResource FormLabelBorder}">
+                        <TextBlock Text="Address" Style="{StaticResource FormLabelText}"/>
+                    </Border>
+                    <Border Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="4" Style="{StaticResource FormInputBorder}">
+                        <TextBox x:Name="TxtDistAddress" Style="{StaticResource FormInputBox}"/>
+                    </Border>
+
+                    <!-- Row 5: Phone | Type -->
+                    <Border Grid.Row="5" Grid.Column="0" Style="{StaticResource FormLabelBorder}">
+                        <TextBlock Text="Phone" Style="{StaticResource FormLabelText}"/>
+                    </Border>
+                    <Border Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Style="{StaticResource FormInputBorder}">
+                        <TextBox x:Name="TxtDistPhone" Style="{StaticResource FormInputBox}"/>
+                    </Border>
+                    <Border Grid.Row="5" Grid.Column="3" Style="{StaticResource FormLabelBorder}">
+                        <TextBlock Text="Type" Style="{StaticResource FormLabelText}"/>
+                    </Border>
+                    <Border Grid.Row="5" Grid.Column="4" Style="{StaticResource FormInputBorder}">
+                        <TextBox x:Name="TxtDistType" Style="{StaticResource FormInputBox}"/>
+                    </Border>
+                </Grid>
+
+                <!-- ──── MIDDLE BLOCK: GRN & Invoice Info ──── -->
+                <Grid Grid.Column="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="95"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="26"/>
+                        <RowDefinition Height="26"/>
+                        <RowDefinition Height="26"/>
+                        <RowDefinition Height="26"/>
+                        <RowDefinition Height="26"/>
+                        <RowDefinition Height="26"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource FormLabelBorder}"><TextBlock Text="GRN No" Style="{StaticResource FormLabelText}"/></Border>
+                    <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource FormInputBorder}"><TextBox x:Name="TxtGrnNo" Style="{StaticResource FormInputBox}" IsReadOnly="True" Text="1"/></Border>
+
+                    <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource FormLabelBorder}"><TextBlock Text="GRN Date" Style="{StaticResource FormLabelText}"/></Border>
+                    <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource FormInputBorder}"><DatePicker x:Name="DpGrnDate" BorderThickness="0" Background="#FFFFFF" FontSize="11.5" VerticalContentAlignment="Center"/></Border>
+
+                    <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource FormLabelBorder}"><TextBlock Text="GRN Amount" Style="{StaticResource FormLabelText}"/></Border>
+                    <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource FormInputBorder}"><TextBox x:Name="TxtGrnAmount" Style="{StaticResource FormInputBox}" HorizontalContentAlignment="Right" IsReadOnly="True" Text="0.00"/></Border>
+
+                    <Border Grid.Row="3" Grid.Column="0" Style="{StaticResource FormLabelBorder}"><TextBlock Text="Invoice No" Style="{StaticResource FormLabelText}"/></Border>
+                    <Border Grid.Row="3" Grid.Column="1" Style="{StaticResource FormInputBorder}"><TextBox x:Name="TxtInvoiceNo" Style="{StaticResource FormInputBox}"/></Border>
+
+                    <Border Grid.Row="4" Grid.Column="0" Style="{StaticResource FormLabelBorder}"><TextBlock Text="Invoice Date" Style="{StaticResource FormLabelText}"/></Border>
+                    <Border Grid.Row="4" Grid.Column="1" Style="{StaticResource FormInputBorder}"><DatePicker x:Name="DpInvoiceDate" BorderThickness="0" Background="#FFFFFF" FontSize="11.5" VerticalContentAlignment="Center"/></Border>
+
+                    <Border Grid.Row="5" Grid.Column="0" Style="{StaticResource FormLabelBorder}"><TextBlock Text="Invoice Amt" Style="{StaticResource FormLabelText}"/></Border>
+                    <Border Grid.Row="5" Grid.Column="1" Style="{StaticResource FormInputBorder}"><TextBox x:Name="TxtInvoiceAmt" Style="{StaticResource FormInputBox}" HorizontalContentAlignment="Right" Text="0.00"/></Border>
+                </Grid>
+
+                <!-- ──── RIGHT BLOCK: Gross, Discounts, GST, Freight, Rounded Off ──── -->
+                <Grid Grid.Column="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="125"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="22.3"/>
+                        <RowDefinition Height="22.3"/>
+                        <RowDefinition Height="22.3"/>
+                        <RowDefinition Height="22.3"/>
+                        <RowDefinition Height="22.3"/>
+                        <RowDefinition Height="22.3"/>
+                        <RowDefinition Height="22.2"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource FormLabelBorder}"><TextBlock Text="Gross Amount" Style="{StaticResource FormLabelText}"/></Border>
+                    <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource FormInputBorder}" BorderThickness="0,0,0,1"><TextBox x:Name="TxtGrossAmount" Style="{StaticResource FormInputBox}" HorizontalContentAlignment="Right" IsReadOnly="True" Text="0.00"/></Border>
+
+                    <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource FormLabelBorder}"><TextBlock Text="Rate Deductions" Style="{StaticResource FormLabelText}"/></Border>
+                    <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource FormInputBorder}" BorderThickness="0,0,0,1"><TextBox x:Name="TxtRateDeductions" Style="{StaticResource FormInputBox}" HorizontalContentAlignment="Right" Text="0.00" TextChanged="HeaderDiscount_TextChanged"/></Border>
+
+                    <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource FormLabelBorder}"><TextBlock Text="Scheme Discount" Style="{StaticResource FormLabelText}"/></Border>
+                    <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource FormInputBorder}" BorderThickness="0,0,0,1"><TextBox x:Name="TxtSchemeDiscount" Style="{StaticResource FormInputBox}" HorizontalContentAlignment="Right" Text="0.00" TextChanged="HeaderDiscount_TextChanged"/></Border>
+
+                    <Border Grid.Row="3" Grid.Column="0" Style="{StaticResource FormLabelBorder}"><TextBlock Text="Cash Discount" Style="{StaticResource FormLabelText}"/></Border>
+                    <Border Grid.Row="3" Grid.Column="1" Style="{StaticResource FormInputBorder}" BorderThickness="0,0,0,1"><TextBox x:Name="TxtCashDiscount" Style="{StaticResource FormInputBox}" HorizontalContentAlignment="Right" Text="0.00" TextChanged="HeaderDiscount_TextChanged"/></Border>
+
+                    <Border Grid.Row="4" Grid.Column="0" Style="{StaticResource FormLabelBorder}"><TextBlock Text="GST" Style="{StaticResource FormLabelText}"/></Border>
+                    <Border Grid.Row="4" Grid.Column="1" Style="{StaticResource FormInputBorder}" BorderThickness="0,0,0,1"><TextBox x:Name="TxtGstTotal" Style="{StaticResource FormInputBox}" HorizontalContentAlignment="Right" IsReadOnly="True" Text="0.00"/></Border>
+
+                    <Border Grid.Row="5" Grid.Column="0" Style="{StaticResource FormLabelBorder}"><TextBlock Text="Freight" Style="{StaticResource FormLabelText}"/></Border>
+                    <Border Grid.Row="5" Grid.Column="1" Style="{StaticResource FormInputBorder}" BorderThickness="0,0,0,1"><TextBox x:Name="TxtFreight" Style="{StaticResource FormInputBox}" HorizontalContentAlignment="Right" Text="0.00" TextChanged="HeaderDiscount_TextChanged"/></Border>
+
+                    <Border Grid.Row="6" Grid.Column="0" Style="{StaticResource FormLabelBorder}"><TextBlock Text="Rounded Off" Style="{StaticResource FormLabelText}"/></Border>
+                    <Border Grid.Row="6" Grid.Column="1" Style="{StaticResource FormInputBorder}" BorderThickness="0,0,0,1"><TextBox x:Name="TxtRoundedOff" Style="{StaticResource FormInputBox}" HorizontalContentAlignment="Right" IsReadOnly="True" Text="0.00"/></Border>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- ══════════════ ROW 1: PURCHASE ITEMS DATAGRID ══════════════ -->
+        <DataGrid Grid.Row="1" x:Name="GridPurchaseItems"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  Background="#FFFFFF"
+                  BorderThickness="0"
+                  GridLinesVisibility="All"
+                  HorizontalGridLinesBrush="#E2E8F0"
+                  VerticalGridLinesBrush="#E2E8F0"
+                  RowHeight="27"
+                  FontSize="12.5"
+                  Foreground="#0F172A"
+                  SelectionUnit="Cell"
+                  SelectionMode="Single"
+                  CellEditEnding="GridPurchaseItems_CellEditEnding">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Sno" Binding="{Binding Sno}" Width="42" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="75" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Qty" Binding="{Binding Qty, UpdateSourceTrigger=PropertyChanged}" Width="58"/>
+                <DataGridTextColumn Header="Free" Binding="{Binding Free, UpdateSourceTrigger=PropertyChanged}" Width="55"/>
+                <DataGridTextColumn Header="Pur.Rate" Binding="{Binding PurRate, StringFormat='{}{0:F2}', UpdateSourceTrigger=PropertyChanged}" Width="78"/>
+                <DataGridTextColumn Header="Batch" Binding="{Binding Batch}" Width="75"/>
+                <DataGridTextColumn Header="Exp Date" Binding="{Binding ExpDate}" Width="80"/>
+                <DataGridTextColumn Header="MRP" Binding="{Binding Mrp, StringFormat='{}{0:F2}'}" Width="70"/>
+                <DataGridTextColumn Header="Selling" Binding="{Binding Selling, StringFormat='{}{0:F2}'}" Width="70"/>
+                <DataGridTextColumn Header="Tstk" Binding="{Binding Tstk, StringFormat='{}{0:0.##}'}" Width="55" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Amount" Binding="{Binding Amount, StringFormat='{}{0:F2}'}" Width="82" IsReadOnly="True"/>
+                <DataGridTextColumn Header="NetAmt" Binding="{Binding NetAmt, StringFormat='{}{0:F2}'}" Width="86" IsReadOnly="True"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- ══════════════ ROW 2: LOWER SUMMARY STRIP + NARRATION ══════════════ -->
+        <Border Grid.Row="2" Background="#FFFFFF" BorderBrush="#94A3B8" BorderThickness="0,1,0,1">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="220"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="210"/>
+                        <ColumnDefinition Width="170"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left Cost/Stock Mini Grid -->
+                    <Grid Grid.Column="0" Background="#EEF2FF">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="24"/>
+                            <RowDefinition Height="24"/>
+                            <RowDefinition Height="24"/>
+                        </Grid.RowDefinitions>
+                        <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource FormLabelBorder}"><TextBlock Text="ROI%" Style="{StaticResource FormLabelText}"/></Border>
+                        <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource FormInputBorder}"><TextBlock x:Name="TxtRoi" Text="0.00" VerticalAlignment="Center" Margin="6,0" FontSize="11.5"/></Border>
+                        <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource FormLabelBorder}"><TextBlock Text="Land Cost" Style="{StaticResource FormLabelText}"/></Border>
+                        <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource FormInputBorder}"><TextBlock x:Name="TxtLandCost" Text="0.00" VerticalAlignment="Center" Margin="6,0" FontSize="11.5"/></Border>
+                        <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource FormLabelBorder}"><TextBlock Text="Cur.Stock" Style="{StaticResource FormLabelText}"/></Border>
+                        <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource FormInputBorder}"><TextBlock x:Name="TxtCurStock" Text="0" VerticalAlignment="Center" Margin="6,0" FontSize="11.5"/></Border>
+                    </Grid>
+
+                    <!-- Center Tax Info -->
+                    <Grid Grid.Column="1" Background="#F8FAFC">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="24"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid Grid.Row="0" Background="#EEF2FF">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource FormLabelBorder}"><TextBlock Text="Tax%" Style="{StaticResource FormLabelText}"/></Border>
+                            <Border Grid.Column="1" Style="{StaticResource FormLabelBorder}"><TextBlock Text="Goods Tax" Style="{StaticResource FormLabelText}"/></Border>
+                            <Border Grid.Column="2" Style="{StaticResource FormLabelBorder}"><TextBlock Text="Other Tax" Style="{StaticResource FormLabelText}"/></Border>
+                        </Grid>
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource FormInputBorder}"><TextBlock x:Name="TxtSummaryTaxPct" Text="0%" VerticalAlignment="Center" Margin="6,0" FontSize="12"/></Border>
+                            <Border Grid.Column="1" Style="{StaticResource FormInputBorder}"><TextBlock x:Name="TxtSummaryGoodsTax" Text="0.00" VerticalAlignment="Center" Margin="6,0" FontSize="12"/></Border>
+                            <Border Grid.Column="2" Style="{StaticResource FormInputBorder}"><TextBlock Text="0.00" VerticalAlignment="Center" Margin="6,0" FontSize="12"/></Border>
+                        </Grid>
+                    </Grid>
+
+                    <!-- Total Qty / FQ -->
+                    <Grid Grid.Column="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="105"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="24"/>
+                            <RowDefinition Height="24"/>
+                            <RowDefinition Height="24"/>
+                        </Grid.RowDefinitions>
+                        <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource FormLabelBorder}"><TextBlock Text="Total Lcost" Style="{StaticResource FormLabelText}"/></Border>
+                        <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource FormInputBorder}"><TextBlock x:Name="TxtTotalLcost" Text="0.00" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="6,0" FontWeight="SemiBold"/></Border>
+                        <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource FormLabelBorder}"><TextBlock Text="Total Qty" Style="{StaticResource FormLabelText}"/></Border>
+                        <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource FormInputBorder}"><TextBlock x:Name="TxtTotalQty" Text="0" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="6,0" FontWeight="Bold"/></Border>
+                        <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource FormLabelBorder}"><TextBlock Text="Total FQ" Style="{StaticResource FormLabelText}"/></Border>
+                        <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource FormInputBorder}"><TextBlock x:Name="TxtTotalFq" Text="0" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="6,0" FontWeight="SemiBold"/></Border>
+                    </Grid>
+
+                    <!-- Final Total / Out.Amt / Cr.Days -->
+                    <Grid Grid.Column="3">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="75"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="24"/>
+                            <RowDefinition Height="24"/>
+                            <RowDefinition Height="24"/>
+                        </Grid.RowDefinitions>
+                        <Border Grid.Row="0" Grid.Column="0" Background="#4F46E5" BorderBrush="#4338CA" BorderThickness="0,0,1,1" Padding="6,0">
+                            <TextBlock Text="Total" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
+                        </Border>
+                        <Border Grid.Row="0" Grid.Column="1" Background="#EFF6FF" BorderBrush="#CBD5E1" BorderThickness="0,0,0,1" Padding="6,0">
+                            <TextBlock x:Name="TxtFinalTotal" Text="0.00" Foreground="#DC2626" FontWeight="Black" FontSize="14" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                        </Border>
+                        <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource FormLabelBorder}"><TextBlock Text="Out.Amt" Style="{StaticResource FormLabelText}"/></Border>
+                        <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource FormInputBorder}" BorderThickness="0,0,0,1"><TextBlock x:Name="TxtOutAmt" Text="0.00" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="6,0" FontWeight="SemiBold"/></Border>
+                        <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource FormLabelBorder}"><TextBlock Text="Cr.Days" Style="{StaticResource FormLabelText}"/></Border>
+                        <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource FormInputBorder}" BorderThickness="0,0,0,1"><TextBox x:Name="TxtCrDays" Style="{StaticResource FormInputBox}" HorizontalContentAlignment="Right" Text="0"/></Border>
+                    </Grid>
+                </Grid>
+
+                <!-- Narration Row -->
+                <Grid Height="28" Background="#EEF2FF">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="85"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" BorderBrush="#CBD5E1" BorderThickness="0,0,1,0" Padding="6,0">
+                        <TextBlock Text="Narration :" Style="{StaticResource FormLabelText}"/>
+                    </Border>
+                    <TextBox Grid.Column="1" x:Name="TxtNarration" Style="{StaticResource FormInputBox}"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- ══════════════ ROW 3: BOTTOM FUNCTION KEYS TOOLBAR ══════════════ -->
+        <Border Grid.Row="3" Background="#FFFFFF" Padding="4,6">
+            <UniformGrid Columns="8" Rows="1">
+                <Button Style="{StaticResource FKeyBtn}" Click="AddItem_Click">
+                    <StackPanel>
+                        <TextBlock Text="F1" Foreground="#4F46E5" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Add Item" Foreground="#334155" FontSize="11" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource FKeyBtn}" Click="NewPurchase_Click">
+                    <StackPanel>
+                        <TextBlock Text="F3" Foreground="#4F46E5" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                        <TextBlock Text="New" Foreground="#334155" FontSize="11" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource FKeyBtn}" Click="ViewPurchases_Click">
+                    <StackPanel>
+                        <TextBlock Text="F5" Foreground="#4F46E5" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                        <TextBlock Text="View" Foreground="#334155" FontSize="11" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource FKeyBtn}" Click="SavePurchase_Click">
+                    <StackPanel>
+                        <TextBlock Text="F6" Foreground="#10B981" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Save" Foreground="#10B981" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource FKeyBtn}" Click="ToggleTaxInclusive_Click">
+                    <StackPanel>
+                        <TextBlock Text="F7" Foreground="#4F46E5" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="TxtTaxBtnLabel" Text="TaxInclusive" Foreground="#334155" FontSize="10.5" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource FKeyBtn}" Click="AddItem_Click">
+                    <StackPanel>
+                        <TextBlock Text="F9" Foreground="#4F46E5" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                        <TextBlock Text="ItemMaster" Foreground="#334155" FontSize="11" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource FKeyBtn}" Click="NewPurchase_Click">
+                    <StackPanel>
+                        <TextBlock Text="F10" Foreground="#EF4444" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Cancel" Foreground="#EF4444" FontSize="11" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource FKeyBtn}" Click="ClosePurchase_Click">
+                    <StackPanel>
+                        <TextBlock Text="F12" Foreground="#475569" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Close" Foreground="#334155" FontSize="11" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </UniformGrid>
+        </Border>
+
+        <!-- Product Lookup Overlay for Adding Items -->
+        <components:ProductLookupOverlay x:Name="PurchaseProductOverlay"
+                                         Grid.RowSpan="4"
+                                         HorizontalAlignment="Right"
+                                         VerticalAlignment="Bottom"
+                                         Margin="0,0,10,48"
+                                         Visibility="Collapsed"/>
+
+        <!-- Distributor Lookup Overlay (Right-Side) -->
+        <components:DistributorLookupOverlay x:Name="PurchaseDistributorOverlay"
+                                             Grid.RowSpan="4"
+                                             HorizontalAlignment="Right"
+                                             VerticalAlignment="Bottom"
+                                             Margin="0,0,10,48"
+                                             Visibility="Collapsed"/>
+    </Grid>
+</UserControl>
