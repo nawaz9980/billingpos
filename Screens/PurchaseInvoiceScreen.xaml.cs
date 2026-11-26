@@ -342,7 +342,7 @@ public partial class PurchaseInvoiceScreen : UserControl
 
     private void PrintBarcodes_Click(object sender, RoutedEventArgs e)
     {
-        var validRows = _items.Where(r => !r.IsBlank && !string.IsNullOrWhiteSpace(r.Code)).ToList();
+        var validRows = _items.Where(r => !r.IsBlank && !string.IsNullOrWhiteSpace(r.Code) && r.Qty > 0).ToList();
         if (validRows.Count == 0)
         {
             MessageBox.Show("No items in Purchase Invoice to print barcode stickers.", "Print Barcode",
@@ -431,8 +431,31 @@ public partial class PurchaseInvoiceScreen : UserControl
         FocusGridCell(row, 6); // Move right to Qty
     }
 
+    private void DeleteRow_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is PurchaseRow row && !row.IsBlank)
+        {
+            _items.Remove(row);
+            EnsureTrailingBlankRow();
+            CalculateTotals();
+        }
+    }
+
     private void GridPurchaseItems_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (e.Key == Key.Delete && Keyboard.FocusedElement is not TextBox)
+        {
+            var delCell = GridPurchaseItems.CurrentCell;
+            if (delCell.Item is PurchaseRow delRow && !delRow.IsBlank)
+            {
+                e.Handled = true;
+                _items.Remove(delRow);
+                EnsureTrailingBlankRow();
+                CalculateTotals();
+                return;
+            }
+        }
+
         if (e.Key != Key.Enter) return;
 
         var current = GridPurchaseItems.CurrentCell;
@@ -540,7 +563,7 @@ public partial class PurchaseInvoiceScreen : UserControl
     {
         if (TxtGrossAmount == null || TxtGstTotal == null || TxtFinalTotal == null) return;
 
-        var validItems = _items.Where(r => !r.IsBlank && !string.IsNullOrWhiteSpace(r.Code)).ToList();
+        var validItems = _items.Where(r => !r.IsBlank && !string.IsNullOrWhiteSpace(r.Code) && (r.Qty > 0 || r.Free > 0)).ToList();
         decimal gross = validItems.Sum(r => r.Amount);
         decimal gst = validItems.Sum(r => r.TaxAmount);
 
@@ -580,7 +603,7 @@ public partial class PurchaseInvoiceScreen : UserControl
     {
         if (!ValidateHeaderBeforeItems()) return;
 
-        var validItems = _items.Where(r => !r.IsBlank && !string.IsNullOrWhiteSpace(r.Code)).ToList();
+        var validItems = _items.Where(r => !r.IsBlank && !string.IsNullOrWhiteSpace(r.Code) && (r.Qty > 0 || r.Free > 0)).ToList();
         if (validItems.Count == 0)
         {
             MessageBox.Show("Please add at least one item before saving Purchase Invoice.", "Purchase Invoice", MessageBoxButton.OK, MessageBoxImage.Warning);

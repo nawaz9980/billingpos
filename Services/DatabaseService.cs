@@ -109,6 +109,21 @@ public static class DatabaseService
                 DistType TEXT NOT NULL DEFAULT 'Local',
                 CreditDays INTEGER NOT NULL DEFAULT 0
             );
+
+            CREATE TABLE IF NOT EXISTS Sizes (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                Name TEXT NOT NULL UNIQUE
+            );
+
+            CREATE TABLE IF NOT EXISTS Brands (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                Name TEXT NOT NULL UNIQUE
+            );
+
+            CREATE TABLE IF NOT EXISTS Styles (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                Name TEXT NOT NULL UNIQUE
+            );
         ";
         cmd.ExecuteNonQuery();
 
@@ -947,6 +962,50 @@ public static class DatabaseService
         using var cmd = conn.CreateCommand();
         cmd.CommandText = "DELETE FROM Distributors WHERE Id = $id;";
         cmd.Parameters.AddWithValue("$id", id);
+        cmd.ExecuteNonQuery();
+    }
+
+    public static List<string> GetMasterNames(string tableName)
+    {
+        EnsureInitialized();
+        string safeTable = tableName switch
+        {
+            "Sizes" => "Sizes",
+            "Brands" => "Brands",
+            "Styles" => "Styles",
+            _ => throw new ArgumentException("Invalid master table", nameof(tableName))
+        };
+
+        var list = new List<string>();
+        using var conn = new SqliteConnection(ConnectionString);
+        conn.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"SELECT Name FROM {safeTable} ORDER BY Name COLLATE NOCASE ASC;";
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+            list.Add(r.GetString(0));
+        return list;
+    }
+
+    public static void AddMasterName(string tableName, string name)
+    {
+        string clean = name.Trim();
+        if (string.IsNullOrEmpty(clean)) return;
+
+        EnsureInitialized();
+        string safeTable = tableName switch
+        {
+            "Sizes" => "Sizes",
+            "Brands" => "Brands",
+            "Styles" => "Styles",
+            _ => throw new ArgumentException("Invalid master table", nameof(tableName))
+        };
+
+        using var conn = new SqliteConnection(ConnectionString);
+        conn.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"INSERT OR IGNORE INTO {safeTable} (Name) VALUES ($name);";
+        cmd.Parameters.AddWithValue("$name", clean);
         cmd.ExecuteNonQuery();
     }
 }
