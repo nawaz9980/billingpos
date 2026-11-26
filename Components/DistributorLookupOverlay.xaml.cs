@@ -50,6 +50,11 @@ public partial class DistributorLookupOverlay : UserControl
         int total = _all.Count;
         int current = GridDistributors.SelectedIndex >= 0 ? GridDistributors.SelectedIndex + 1 : 0;
         TxtRecordsCount.Text = $"Records : {current}/{total}";
+
+        if (GridDistributors.SelectedItem is DatabaseService.DistributorRecord dist)
+            TxtPreviewAddress.Text = string.IsNullOrWhiteSpace(dist.Address) ? "-" : dist.Address;
+        else
+            TxtPreviewAddress.Text = string.Empty;
     }
 
     private void SelectCurrent()

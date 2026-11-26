@@ -13,6 +13,11 @@ public class ProductItem
     public string Name { get; set; } = string.Empty;
     public string Code { get; set; } = string.Empty;
     public string Alias { get; set; } = string.Empty;
+    public string Barcode { get; set; } = string.Empty;
+    public string Size { get; set; } = string.Empty;
+    public string HsnCode { get; set; } = string.Empty;
+    public string Brand { get; set; } = string.Empty;
+    public string Style { get; set; } = string.Empty;
     public decimal Stock { get; set; }
     public decimal Rate { get; set; }
     public string Gst { get; set; } = "12%";
@@ -67,7 +72,10 @@ public partial class ProductLookupOverlay : UserControl
             _filteredProducts = _allProducts.Where(p =>
                 p.Name.ToLowerInvariant().Contains(query) ||
                 p.Code.ToLowerInvariant().Contains(query) ||
-                p.Alias.ToLowerInvariant().Contains(query)
+                p.Alias.ToLowerInvariant().Contains(query) ||
+                p.Barcode.ToLowerInvariant().Contains(query) ||
+                p.Size.ToLowerInvariant().Contains(query) ||
+                p.HsnCode.ToLowerInvariant().Contains(query)
             ).ToList();
         }
 

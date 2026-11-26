@@ -5,7 +5,9 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Media;
 using QuickPos.Components;
 using QuickPos.Services;
 
@@ -20,8 +22,12 @@ public class PurchaseRow : INotifyPropertyChanged
     private decimal _selling;
 
     public int Sno { get; set; }
+    public bool IsBlank { get; set; }
     public string Code { get; set; } = string.Empty;
+    public string Barcode { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public string Size { get; set; } = string.Empty;
+    public string HsnCode { get; set; } = string.Empty;
     public decimal GstPct { get; set; }
     public bool IsTaxInclusive { get; set; }
 
@@ -33,6 +39,7 @@ public class PurchaseRow : INotifyPropertyChanged
             _qty = Math.Max(0, value);
             OnPropertyChanged();
             OnPropertyChanged(nameof(Amount));
+            OnPropertyChanged(nameof(TaxAmount));
             OnPropertyChanged(nameof(NetAmt));
         }
     }
@@ -55,6 +62,7 @@ public class PurchaseRow : INotifyPropertyChanged
             _purRate = Math.Max(0, value);
             OnPropertyChanged();
             OnPropertyChanged(nameof(Amount));
+            OnPropertyChanged(nameof(TaxAmount));
             OnPropertyChanged(nameof(NetAmt));
         }
     }
@@ -89,6 +97,7 @@ public class PurchaseRow : INotifyPropertyChanged
     public void RefreshTotals()
     {
         OnPropertyChanged(nameof(Amount));
+        OnPropertyChanged(nameof(TaxAmount));
         OnPropertyChanged(nameof(NetAmt));
     }
 
@@ -117,13 +126,98 @@ public partial class PurchaseInvoiceScreen : UserControl
 
         PurchaseDistributorOverlay.DistributorSelected += OnDistributorSelected;
         PurchaseDistributorOverlay.CloseRequested += () => TxtDistCode.Focus();
+
+        QuickAddItemOverlay.ItemsCreated += OnQuickItemsCreated;
+        QuickAddItemOverlay.CloseRequested += () => TxtScanBarcode.Focus();
     }
 
     private void UserControl_Loaded(object sender, RoutedEventArgs e)
     {
         TxtGrnNo.Text = DatabaseService.GetNextPurchaseGrnNo().ToString();
+        EnsureTrailingBlankRow();
         CalculateTotals();
-        TxtDistName.Focus();
+        TxtDistCode.Focus();
+    }
+
+    private void EnsureTrailingBlankRow()
+    {
+        for (int i = _items.Count - 1; i >= 0; i--)
+        {
+            if (_items[i].IsBlank && i != _items.Count - 1)
+                _items.RemoveAt(i);
+        }
+
+        if (_items.Count == 0 || !_items[^1].IsBlank)
+        {
+            _items.Add(new PurchaseRow
+            {
+                IsBlank = true,
+                Qty = 0,
+                IsTaxInclusive = _isTaxInclusive
+            });
+        }
+
+        for (int i = 0; i < _items.Count; i++)
+            _items[i].Sno = i + 1;
+
+        GridPurchaseItems.Items.Refresh();
+    }
+
+    private bool ValidateHeaderBeforeItems()
+    {
+        if (string.IsNullOrWhiteSpace(TxtInvoiceNo.Text))
+        {
+            MessageBox.Show("Please enter Invoice No before adding items.", "Header Required",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            TxtInvoiceNo.Focus();
+            return false;
+        }
+
+        if (DpInvoiceDate.SelectedDate == null)
+        {
+            MessageBox.Show("Please select Invoice Date before adding items.", "Header Required",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            DpInvoiceDate.Focus();
+            return false;
+        }
+
+        if (!decimal.TryParse(TxtInvoiceAmt.Text.Trim(), out decimal invAmt) || invAmt <= 0m)
+        {
+            MessageBox.Show("Please enter Invoice Amount (> 0) before adding items.", "Header Required",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            TxtInvoiceAmt.Focus();
+            TxtInvoiceAmt.SelectAll();
+            return false;
+        }
+
+        return true;
+    }
+
+    private void FocusBlankCodeCell()
+    {
+        EnsureTrailingBlankRow();
+        var blankRow = _items[^1];
+        Dispatcher.InvokeAsync(() =>
+        {
+            GridPurchaseItems.Focus();
+            GridPurchaseItems.ScrollIntoView(blankRow);
+            GridPurchaseItems.CurrentCell = new DataGridCellInfo(blankRow, GridPurchaseItems.Columns[1]);
+            GridPurchaseItems.SelectedCells.Clear();
+            GridPurchaseItems.SelectedCells.Add(GridPurchaseItems.CurrentCell);
+        }, System.Windows.Threading.DispatcherPriority.Input);
+    }
+
+    private void FocusGridCell(PurchaseRow row, int columnIndex)
+    {
+        Dispatcher.InvokeAsync(() =>
+        {
+            GridPurchaseItems.Focus();
+            GridPurchaseItems.ScrollIntoView(row);
+            GridPurchaseItems.CurrentCell = new DataGridCellInfo(row, GridPurchaseItems.Columns[columnIndex]);
+            GridPurchaseItems.SelectedCells.Clear();
+            GridPurchaseItems.SelectedCells.Add(GridPurchaseItems.CurrentCell);
+            GridPurchaseItems.BeginEdit();
+        }, System.Windows.Threading.DispatcherPriority.Input);
     }
 
     private static decimal ParseGstPct(string? gstText)
@@ -155,17 +249,171 @@ public partial class PurchaseInvoiceScreen : UserControl
 
     private void AddItem_Click(object sender, RoutedEventArgs e)
     {
+        if (!ValidateHeaderBeforeItems()) return;
         PurchaseProductOverlay.Show();
+    }
+
+    private void QuickAddItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (!ValidateHeaderBeforeItems()) return;
+        QuickAddItemOverlay.Show(TxtScanBarcode.Text.Trim());
+    }
+
+    private void TxtScanBarcode_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter) return;
+        e.Handled = true;
+        if (!ValidateHeaderBeforeItems()) return;
+
+        string query = TxtScanBarcode.Text.Trim();
+        if (string.IsNullOrEmpty(query))
+        {
+            PurchaseProductOverlay.Show();
+            return;
+        }
+
+        var product = DatabaseService.GetProductByBarcodeOrCode(query);
+        if (product != null)
+        {
+            var existing = _items.FirstOrDefault(r =>
+                string.Equals(r.Code, product.Code, StringComparison.OrdinalIgnoreCase));
+            if (existing != null)
+            {
+                existing.Qty += 1;
+                CalculateTotals();
+            }
+            else
+            {
+                OnProductSelected(product);
+            }
+
+            TxtScanBarcode.Clear();
+            TxtScanBarcode.Focus();
+            return;
+        }
+
+        var res = MessageBox.Show(
+            $"Barcode / Code '{query}' not found.\nCreate a new item with this barcode?",
+            "Item Not Found",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (res == MessageBoxResult.Yes)
+            QuickAddItemOverlay.Show(query);
+    }
+
+    private void OnQuickItemsCreated(System.Collections.Generic.List<QuickAddedPurchaseItem> created)
+    {
+        PurchaseRow? lastAdded = null;
+        foreach (var item in created)
+        {
+            decimal gstPct = ParseGstPct(item.Product.Gst);
+            var row = new PurchaseRow
+            {
+                IsBlank = false,
+                Code = item.Product.Code,
+                Barcode = item.Product.Barcode,
+                Name = item.Product.Name,
+                Size = item.Product.Size,
+                HsnCode = item.Product.HsnCode,
+                Qty = item.Qty,
+                Free = 0,
+                PurRate = item.PurRate,
+                Mrp = item.Mrp,
+                Selling = item.Selling,
+                Tstk = item.Product.Stock,
+                GstPct = gstPct,
+                IsTaxInclusive = _isTaxInclusive
+            };
+
+            int insertIdx = _items.Count > 0 && _items[^1].IsBlank ? _items.Count - 1 : _items.Count;
+            _items.Insert(insertIdx, row);
+            lastAdded = row;
+        }
+
+        EnsureTrailingBlankRow();
+        CalculateTotals();
+        TxtScanBarcode.Clear();
+        if (lastAdded != null)
+            FocusGridCell(lastAdded, 6); // Move right to Qty
+        else
+            FocusBlankCodeCell();
+    }
+
+    private void PrintBarcodes_Click(object sender, RoutedEventArgs e)
+    {
+        var validRows = _items.Where(r => !r.IsBlank && !string.IsNullOrWhiteSpace(r.Code)).ToList();
+        if (validRows.Count == 0)
+        {
+            MessageBox.Show("No items in Purchase Invoice to print barcode stickers.", "Print Barcode",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var dlg = new PrintDialog();
+        if (dlg.ShowDialog() != true) return;
+
+        var doc = new FlowDocument
+        {
+            PagePadding = new Thickness(12),
+            ColumnWidth = 220,
+            FontFamily = new FontFamily("Segoe UI")
+        };
+
+        foreach (var row in validRows)
+        {
+            int copies = Math.Max(1, row.Qty);
+            string codeToPrint = string.IsNullOrWhiteSpace(row.Barcode) ? row.Code : row.Barcode;
+
+            for (int c = 0; c < copies; c++)
+            {
+                var card = new Border
+                {
+                    Margin = new Thickness(0, 0, 0, 10),
+                    BorderBrush = Brushes.Gray,
+                    BorderThickness = new Thickness(0.75),
+                    Padding = new Thickness(7),
+                    Background = Brushes.White
+                };
+
+                var stack = new StackPanel();
+                stack.Children.Add(new TextBlock { Text = "QuickPOS", FontWeight = FontWeights.Bold, FontSize = 9, Foreground = Brushes.Black });
+                stack.Children.Add(new TextBlock { Text = row.Name, FontWeight = FontWeights.Bold, FontSize = 10.5, Foreground = Brushes.Black, TextWrapping = TextWrapping.Wrap });
+
+                string meta = string.IsNullOrWhiteSpace(row.Size) ? "" : $"Size: {row.Size}  ";
+                if (!string.IsNullOrWhiteSpace(row.HsnCode)) meta += $"HSN: {row.HsnCode}";
+                if (!string.IsNullOrEmpty(meta))
+                    stack.Children.Add(new TextBlock { Text = meta.Trim(), FontSize = 9, Foreground = Brushes.Black });
+
+                stack.Children.Add(new TextBlock
+                {
+                    Text = $"MRP: Rs.{row.Mrp:F2}   Rate: Rs.{row.Selling:F2}",
+                    FontWeight = FontWeights.SemiBold,
+                    FontSize = 9.5,
+                    Foreground = Brushes.Black
+                });
+
+                stack.Children.Add(BarcodeGenerator.CreateBarcodeElement(codeToPrint, height: 32, narrowWidth: 0.95));
+
+                card.Child = stack;
+                doc.Blocks.Add(new BlockUIContainer(card));
+            }
+        }
+
+        dlg.PrintDocument(((IDocumentPaginatorSource)doc).DocumentPaginator, "QuickPOS Barcode Labels");
     }
 
     private void OnProductSelected(ProductItem product)
     {
         decimal gstPct = ParseGstPct(product.Gst);
-        _items.Add(new PurchaseRow
+        var row = new PurchaseRow
         {
-            Sno = _items.Count + 1,
+            IsBlank = false,
             Code = product.Code,
+            Barcode = product.Barcode,
             Name = product.Name,
+            Size = product.Size,
+            HsnCode = product.HsnCode,
             Qty = 1,
             Free = 0,
             PurRate = product.Rate,
@@ -174,9 +422,94 @@ public partial class PurchaseInvoiceScreen : UserControl
             Tstk = product.Stock,
             GstPct = gstPct,
             IsTaxInclusive = _isTaxInclusive
-        });
+        };
 
+        int insertIdx = _items.Count > 0 && _items[^1].IsBlank ? _items.Count - 1 : _items.Count;
+        _items.Insert(insertIdx, row);
+        EnsureTrailingBlankRow();
         CalculateTotals();
+        FocusGridCell(row, 6); // Move right to Qty
+    }
+
+    private void GridPurchaseItems_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter) return;
+
+        var current = GridPurchaseItems.CurrentCell;
+        if (current.Item is not PurchaseRow row || current.Column == null) return;
+
+        int colIdx = GridPurchaseItems.Columns.IndexOf(current.Column);
+        e.Handled = true;
+
+        // Commit any active edit before moving
+        string? editedText = (Keyboard.FocusedElement as TextBox)?.Text;
+        GridPurchaseItems.CommitEdit(DataGridEditingUnit.Cell, true);
+        GridPurchaseItems.CommitEdit(DataGridEditingUnit.Row, true);
+        CalculateTotals();
+
+        // If pressing Enter on Code cell of the blank row -> lookup or open product list
+        if (row.IsBlank && colIdx == 1)
+        {
+            if (!ValidateHeaderBeforeItems())
+            {
+                row.Code = string.Empty;
+                return;
+            }
+
+            string query = (editedText ?? row.Code ?? string.Empty).Trim();
+            row.Code = string.Empty;
+
+            if (string.IsNullOrEmpty(query))
+            {
+                PurchaseProductOverlay.Show();
+                return;
+            }
+
+            var product = DatabaseService.GetProductByBarcodeOrCode(query);
+            if (product != null)
+            {
+                OnProductSelected(product);
+                return;
+            }
+
+            var res = MessageBox.Show(
+                $"Code / Barcode '{query}' not found.\nCreate a new item with this code?",
+                "Item Not Found",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+            if (res == MessageBoxResult.Yes)
+                QuickAddItemOverlay.Show(query);
+            else
+                FocusBlankCodeCell();
+            return;
+        }
+
+        // Editable columns to the right: Size(4), HSN(5), Qty(6), Free(7), PurRate(8), MRP(9), Selling(10)
+        int[] editableCols = [4, 5, 6, 7, 8, 9, 10];
+        int pos = Array.IndexOf(editableCols, colIdx);
+        if (pos >= 0 && pos + 1 < editableCols.Length)
+        {
+            FocusGridCell(row, editableCols[pos + 1]);
+        }
+        else if (colIdx < 4)
+        {
+            FocusGridCell(row, 6); // From Code/Name jump to Qty
+        }
+        else
+        {
+            // End of row (Selling) -> move down to empty Code cell of trailing blank row
+            FocusBlankCodeCell();
+        }
+    }
+
+    private void GridPurchaseItems_BeginningEdit(object? sender, DataGridBeginningEditEventArgs e)
+    {
+        if (e.Row.Item is PurchaseRow row && row.IsBlank)
+        {
+            int colIdx = GridPurchaseItems.Columns.IndexOf(e.Column);
+            if (colIdx != 1) // Only Code cell is editable on the blank row
+                e.Cancel = true;
+        }
     }
 
     private void GridPurchaseItems_CellEditEnding(object? sender, DataGridCellEditEndingEventArgs e)
@@ -207,8 +540,9 @@ public partial class PurchaseInvoiceScreen : UserControl
     {
         if (TxtGrossAmount == null || TxtGstTotal == null || TxtFinalTotal == null) return;
 
-        decimal gross = _items.Sum(r => r.Amount);
-        decimal gst = _items.Sum(r => r.TaxAmount);
+        var validItems = _items.Where(r => !r.IsBlank && !string.IsNullOrWhiteSpace(r.Code)).ToList();
+        decimal gross = validItems.Sum(r => r.Amount);
+        decimal gst = validItems.Sum(r => r.TaxAmount);
 
         decimal.TryParse(TxtRateDeductions?.Text, out decimal rateDed);
         decimal.TryParse(TxtSchemeDiscount?.Text, out decimal schemeDisc);
@@ -232,21 +566,25 @@ public partial class PurchaseInvoiceScreen : UserControl
         TxtOutAmt.Text = roundedTotal.ToString("F2");
         TxtSummaryGoodsTax.Text = gst.ToString("F2");
 
-        int totQty = _items.Sum(r => r.Qty);
-        int totFq = _items.Sum(r => r.Free);
+        int totQty = validItems.Sum(r => r.Qty);
+        int totFq = validItems.Sum(r => r.Free);
         TxtTotalQty.Text = totQty.ToString();
         TxtTotalFq.Text = totFq.ToString();
         TxtTotalLcost.Text = roundedTotal.ToString("F2");
 
-        var distinctGst = _items.Select(r => r.GstPct).Distinct().ToList();
+        var distinctGst = validItems.Select(r => r.GstPct).Distinct().ToList();
         TxtSummaryTaxPct.Text = distinctGst.Count == 1 ? $"{distinctGst[0]:0.##}%" : "Mixed";
     }
 
     private void SavePurchase_Click(object sender, RoutedEventArgs e)
     {
-        if (_items.Count == 0)
+        if (!ValidateHeaderBeforeItems()) return;
+
+        var validItems = _items.Where(r => !r.IsBlank && !string.IsNullOrWhiteSpace(r.Code)).ToList();
+        if (validItems.Count == 0)
         {
             MessageBox.Show("Please add at least one item before saving Purchase Invoice.", "Purchase Invoice", MessageBoxButton.OK, MessageBoxImage.Warning);
+            FocusBlankCodeCell();
             return;
         }
 
@@ -262,7 +600,7 @@ public partial class PurchaseInvoiceScreen : UserControl
             distName,
             netAmt,
             TxtNarration.Text.Trim(),
-            _items.Select(i => (i.Code, i.Name, i.Qty, i.Free, i.PurRate, i.NetAmt)));
+            validItems.Select(i => (i.Code, i.Name, i.Qty, i.Free, i.PurRate, i.NetAmt, i.Barcode, i.Size, i.HsnCode)));
 
         MessageBox.Show(
             $"Purchase Invoice (GRN #{grnNo}) Saved!\nDistributor: {distName}\nTotal Amount: Rs. {netAmt:F2}\nStock has been updated in SQLite.",
@@ -288,7 +626,7 @@ public partial class PurchaseInvoiceScreen : UserControl
 
     private void NewPurchase_Click(object sender, RoutedEventArgs e)
     {
-        if (_items.Count > 0)
+        if (_items.Any(r => !r.IsBlank))
         {
             var res = MessageBox.Show("Clear current Purchase Invoice?", "New / Cancel", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (res != MessageBoxResult.Yes) return;
@@ -313,8 +651,9 @@ public partial class PurchaseInvoiceScreen : UserControl
         TxtCashDiscount.Text = "0.00";
         TxtFreight.Text = "0.00";
         TxtNarration.Clear();
+        EnsureTrailingBlankRow();
         CalculateTotals();
-        TxtDistName.Focus();
+        TxtDistCode.Focus();
     }
 
     private void ClosePurchase_Click(object sender, RoutedEventArgs e)
@@ -324,6 +663,17 @@ public partial class PurchaseInvoiceScreen : UserControl
 
     private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (QuickAddItemOverlay.Visibility == Visibility.Visible)
+        {
+            if (e.Key == Key.Escape)
+            {
+                e.Handled = true;
+                QuickAddItemOverlay.Hide();
+                TxtScanBarcode.Focus();
+            }
+            return;
+        }
+
         if (PurchaseDistributorOverlay.Visibility == Visibility.Visible)
         {
             if (e.Key == Key.Escape)
@@ -350,6 +700,16 @@ public partial class PurchaseInvoiceScreen : UserControl
             e.Handled = true;
             AddItem_Click(sender, e);
         }
+        else if (e.Key == Key.F2)
+        {
+            e.Handled = true;
+            QuickAddItem_Click(sender, e);
+        }
+        else if (e.Key == Key.F8)
+        {
+            e.Handled = true;
+            PrintBarcodes_Click(sender, e);
+        }
         else if (e.Key == Key.F3 || e.Key == Key.F10)
         {
             e.Handled = true;
@@ -375,5 +735,69 @@ public partial class PurchaseInvoiceScreen : UserControl
             e.Handled = true;
             ClosePurchase_Click(sender, e);
         }
+        else if (e.Key == Key.Enter)
+        {
+            if (HandleEnterNavigation())
+                e.Handled = true;
+        }
+    }
+
+    private bool HandleEnterNavigation()
+    {
+        var focused = Keyboard.FocusedElement as DependencyObject;
+        if (focused == null) return false;
+
+        Control[] order =
+        [
+            CmbGrnType,
+            TxtParcelNo,
+            CmbPurType,
+            DpGrnDate,
+            TxtInvoiceNo,
+            DpInvoiceDate,
+            TxtInvoiceAmt,
+            TxtRateDeductions,
+            TxtSchemeDiscount,
+            TxtCashDiscount,
+            TxtFreight,
+            TxtCrDays,
+            TxtNarration
+        ];
+
+        for (int i = 0; i < order.Length; i++)
+        {
+            if (IsInside(focused, order[i]))
+            {
+                if (ReferenceEquals(order[i], TxtInvoiceAmt))
+                {
+                    if (ValidateHeaderBeforeItems())
+                        FocusBlankCodeCell();
+                    return true;
+                }
+
+                if (i + 1 < order.Length)
+                {
+                    order[i + 1].Focus();
+                    if (order[i + 1] is TextBox tb) tb.SelectAll();
+                }
+                else
+                {
+                    FocusBlankCodeCell();
+                }
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsInside(DependencyObject element, DependencyObject target)
+    {
+        while (element != null)
+        {
+            if (ReferenceEquals(element, target)) return true;
+            element = VisualTreeHelper.GetParent(element);
+        }
+        return false;
     }
 }

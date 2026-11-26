@@ -155,6 +155,28 @@ public static class DatabaseService
             }
             catch { }
         }
+
+        string[] productAndPurchaseAlterCols =
+        [
+            "ALTER TABLE Products ADD COLUMN Barcode TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE Products ADD COLUMN Size TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE Products ADD COLUMN HsnCode TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE Products ADD COLUMN Brand TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE Products ADD COLUMN Style TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE PurchaseItems ADD COLUMN Barcode TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE PurchaseItems ADD COLUMN Size TEXT NOT NULL DEFAULT '';",
+            "ALTER TABLE PurchaseItems ADD COLUMN HsnCode TEXT NOT NULL DEFAULT '';"
+        ];
+        foreach (string sql in productAndPurchaseAlterCols)
+        {
+            try
+            {
+                using var alterCmd2 = conn.CreateCommand();
+                alterCmd2.CommandText = sql;
+                alterCmd2.ExecuteNonQuery();
+            }
+            catch { }
+        }
     }
 
     public static (string Phone, string Name, string CustCode)? GetCustomerByPhone(string phone)
@@ -247,7 +269,7 @@ public static class DatabaseService
         conn.Open();
 
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT Code, Name, Alias, Stock, Rate, Gst FROM Products ORDER BY Id ASC;";
+        cmd.CommandText = "SELECT Code, Name, Alias, Stock, Rate, Gst, Barcode, Size, HsnCode, Brand, Style FROM Products ORDER BY Id ASC;";
         using var reader = cmd.ExecuteReader();
 
         int sno = 1;
@@ -261,13 +283,103 @@ public static class DatabaseService
                 Alias = reader.GetString(2),
                 Stock = (decimal)reader.GetDouble(3),
                 Rate = (decimal)reader.GetDouble(4),
-                Gst = reader.GetString(5)
+                Gst = reader.GetString(5),
+                Barcode = reader.GetString(6),
+                Size = reader.GetString(7),
+                HsnCode = reader.GetString(8),
+                Brand = reader.GetString(9),
+                Style = reader.GetString(10)
             });
         }
         return list;
     }
 
-    public static void AddProduct(string code, string name, string alias, decimal stock, decimal rate, string gst = "8%")
+    public static ProductItem? GetProductByBarcodeOrCode(string codeOrBarcode)
+    {
+        EnsureInitialized();
+        string q = codeOrBarcode.Trim();
+        if (string.IsNullOrEmpty(q)) return null;
+
+        using var conn = new SqliteConnection(ConnectionString);
+        conn.Open();
+
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT Code, Name, Alias, Stock, Rate, Gst, Barcode, Size, HsnCode, Brand, Style
+            FROM Products
+            WHERE Barcode = $q COLLATE NOCASE
+               OR Code = $q COLLATE NOCASE
+               OR Alias = $q COLLATE NOCASE
+            LIMIT 1;";
+        cmd.Parameters.AddWithValue("$q", q);
+        using var reader = cmd.ExecuteReader();
+        if (reader.Read())
+        {
+            return new ProductItem
+            {
+                Sno = 1,
+                Code = reader.GetString(0),
+                Name = reader.GetString(1),
+                Alias = reader.GetString(2),
+                Stock = (decimal)reader.GetDouble(3),
+                Rate = (decimal)reader.GetDouble(4),
+                Gst = reader.GetString(5),
+                Barcode = reader.GetString(6),
+                Size = reader.GetString(7),
+                HsnCode = reader.GetString(8),
+                Brand = reader.GetString(9),
+                Style = reader.GetString(10)
+            };
+        }
+        return null;
+    }
+
+    public static string GetNextProductCode()
+    {
+        EnsureInitialized();
+        using var conn = new SqliteConnection(ConnectionString);
+        conn.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT IFNULL(MAX(Id), 0) + 101 FROM Products;";
+        var next = Convert.ToInt32(cmd.ExecuteScalar() ?? 101);
+        return next.ToString();
+    }
+
+    public static string GetNextInternalBarcode()
+    {
+        EnsureInitialized();
+        using var conn = new SqliteConnection(ConnectionString);
+        conn.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT IFNULL(MAX(Id), 0) + 1 FROM Products;";
+        int next = Convert.ToInt32(cmd.ExecuteScalar() ?? 1);
+        string candidate = $"20{next:D4}";
+
+        // Ensure uniqueness if custom barcodes were entered
+        while (true)
+        {
+            using var chk = conn.CreateCommand();
+            chk.CommandText = "SELECT COUNT(*) FROM Products WHERE Barcode = $b;";
+            chk.Parameters.AddWithValue("$b", candidate);
+            long exists = (long)(chk.ExecuteScalar() ?? 0L);
+            if (exists == 0) return candidate;
+            next++;
+            candidate = $"20{next:D4}";
+        }
+    }
+
+    public static void AddProduct(
+        string code,
+        string name,
+        string alias,
+        decimal stock,
+        decimal rate,
+        string gst = "8%",
+        string barcode = "",
+        string size = "",
+        string hsnCode = "",
+        string brand = "",
+        string style = "")
     {
         EnsureInitialized();
         using var conn = new SqliteConnection(ConnectionString);
@@ -275,14 +387,19 @@ public static class DatabaseService
 
         using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
-            INSERT INTO Products (Code, Name, Alias, Stock, Rate, Gst)
-            VALUES ($code, $name, $alias, $stock, $rate, $gst);";
+            INSERT INTO Products (Code, Name, Alias, Stock, Rate, Gst, Barcode, Size, HsnCode, Brand, Style)
+            VALUES ($code, $name, $alias, $stock, $rate, $gst, $barcode, $size, $hsnCode, $brand, $style);";
         cmd.Parameters.AddWithValue("$code", code);
         cmd.Parameters.AddWithValue("$name", name);
         cmd.Parameters.AddWithValue("$alias", alias);
         cmd.Parameters.AddWithValue("$stock", (double)stock);
         cmd.Parameters.AddWithValue("$rate", (double)rate);
         cmd.Parameters.AddWithValue("$gst", gst);
+        cmd.Parameters.AddWithValue("$barcode", barcode.Trim());
+        cmd.Parameters.AddWithValue("$size", size.Trim());
+        cmd.Parameters.AddWithValue("$hsnCode", hsnCode.Trim());
+        cmd.Parameters.AddWithValue("$brand", brand.Trim());
+        cmd.Parameters.AddWithValue("$style", style.Trim());
         cmd.ExecuteNonQuery();
     }
 
@@ -538,7 +655,7 @@ public static class DatabaseService
         string distributor,
         decimal amount,
         string narration,
-        IEnumerable<(string Code, string Name, int Qty, int Free, decimal PurRate, decimal NetAmt)> items)
+        IEnumerable<(string Code, string Name, int Qty, int Free, decimal PurRate, decimal NetAmt, string Barcode, string Size, string HsnCode)> items)
     {
         EnsureInitialized();
         using var conn = new SqliteConnection(ConnectionString);
@@ -568,8 +685,8 @@ public static class DatabaseService
             {
                 itemCmd.Transaction = tx;
                 itemCmd.CommandText = @"
-                    INSERT INTO PurchaseItems (PurchaseId, Code, Name, Qty, Free, PurRate, NetAmt)
-                    VALUES ($purchaseId, $code, $name, $qty, $free, $purRate, $netAmt);";
+                    INSERT INTO PurchaseItems (PurchaseId, Code, Name, Qty, Free, PurRate, NetAmt, Barcode, Size, HsnCode)
+                    VALUES ($purchaseId, $code, $name, $qty, $free, $purRate, $netAmt, $barcode, $size, $hsnCode);";
                 itemCmd.Parameters.AddWithValue("$purchaseId", purchaseId);
                 itemCmd.Parameters.AddWithValue("$code", it.Code);
                 itemCmd.Parameters.AddWithValue("$name", it.Name);
@@ -577,6 +694,9 @@ public static class DatabaseService
                 itemCmd.Parameters.AddWithValue("$free", it.Free);
                 itemCmd.Parameters.AddWithValue("$purRate", (double)it.PurRate);
                 itemCmd.Parameters.AddWithValue("$netAmt", (double)it.NetAmt);
+                itemCmd.Parameters.AddWithValue("$barcode", it.Barcode);
+                itemCmd.Parameters.AddWithValue("$size", it.Size);
+                itemCmd.Parameters.AddWithValue("$hsnCode", it.HsnCode);
                 itemCmd.ExecuteNonQuery();
             }
 

@@ -41,6 +41,10 @@
                 <Trigger Property="IsFocused" Value="True">
                     <Setter Property="Background" Value="#FEF3C7"/>
                 </Trigger>
+                <Trigger Property="IsReadOnly" Value="True">
+                    <Setter Property="Background" Value="#F8FAFC"/>
+                    <Setter Property="Foreground" Value="#334155"/>
+                </Trigger>
             </Style.Triggers>
         </Style>
 
@@ -51,6 +55,7 @@
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="FontSize" Value="11.5"/>
             <Setter Property="Padding" Value="6,5"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="BorderBrush" Value="#4338CA"/>
             <Setter Property="BorderThickness" Value="0,0,1,1"/>
         </Style>
@@ -75,6 +80,34 @@
                     <Setter Property="Foreground" Value="#FFFFFF"/>
                     <Setter Property="FontWeight" Value="SemiBold"/>
                 </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="CenterCellText" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="HideOnBlankText" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsBlank}" Value="True">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="HideOnBlankCenterText" TargetType="TextBlock" BasedOn="{StaticResource HideOnBlankText}"/>
+
+        <Style x:Key="DisableOnBlankCell" TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsBlank}" Value="True">
+                    <Setter Property="Focusable" Value="False"/>
+                    <Setter Property="IsHitTestVisible" Value="False"/>
+                </DataTrigger>
             </Style.Triggers>
         </Style>
 
@@ -151,9 +184,9 @@
                         <TextBlock Text="Grn Type" Style="{StaticResource FormLabelText}"/>
                     </Border>
                     <Border Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="4" Style="{StaticResource FormInputBorder}">
-                        <ComboBox x:Name="CmbGrnType" BorderThickness="0" Background="#4F46E5" Foreground="#FFFFFF" FontWeight="Bold" FontSize="12" SelectedIndex="0" VerticalContentAlignment="Center">
-                            <ComboBoxItem Content="Direct" Foreground="#0F172A"/>
-                            <ComboBoxItem Content="Against PO" Foreground="#0F172A"/>
+                        <ComboBox x:Name="CmbGrnType" BorderThickness="0" Background="#FFFFFF" Foreground="#0F172A" FontWeight="Bold" FontSize="12" SelectedIndex="0" VerticalContentAlignment="Center">
+                            <ComboBoxItem Content="Direct"/>
+                            <ComboBoxItem Content="Against PO"/>
                         </ComboBox>
                     </Border>
 
@@ -188,34 +221,34 @@
                         <Button Content="More Options &gt;&gt;" Background="#EEF2FF" Foreground="#4338CA" BorderBrush="#C7D2FE" BorderThickness="1" FontSize="11" FontWeight="Bold" Cursor="Hand" Click="AddItem_Click"/>
                     </Border>
 
-                    <!-- Row 3: Dist Name -->
+                    <!-- Row 3: Dist Name (Read-Only, auto-filled from Distributor) -->
                     <Border Grid.Row="3" Grid.Column="0" Style="{StaticResource FormLabelBorder}">
                         <TextBlock Text="Dist Name" Style="{StaticResource FormLabelText}"/>
                     </Border>
                     <Border Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="4" Style="{StaticResource FormInputBorder}">
-                        <TextBox x:Name="TxtDistName" Style="{StaticResource FormInputBox}"/>
+                        <TextBox x:Name="TxtDistName" Style="{StaticResource FormInputBox}" IsReadOnly="True" IsTabStop="False"/>
                     </Border>
 
-                    <!-- Row 4: Address -->
+                    <!-- Row 4: Address (Read-Only, auto-filled from Distributor) -->
                     <Border Grid.Row="4" Grid.Column="0" Style="{StaticResource FormLabelBorder}">
                         <TextBlock Text="Address" Style="{StaticResource FormLabelText}"/>
                     </Border>
                     <Border Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="4" Style="{StaticResource FormInputBorder}">
-                        <TextBox x:Name="TxtDistAddress" Style="{StaticResource FormInputBox}"/>
+                        <TextBox x:Name="TxtDistAddress" Style="{StaticResource FormInputBox}" IsReadOnly="True" IsTabStop="False"/>
                     </Border>
 
-                    <!-- Row 5: Phone | Type -->
+                    <!-- Row 5: Phone | Type (Read-Only, auto-filled from Distributor) -->
                     <Border Grid.Row="5" Grid.Column="0" Style="{StaticResource FormLabelBorder}">
                         <TextBlock Text="Phone" Style="{StaticResource FormLabelText}"/>
                     </Border>
                     <Border Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Style="{StaticResource FormInputBorder}">
-                        <TextBox x:Name="TxtDistPhone" Style="{StaticResource FormInputBox}"/>
+                        <TextBox x:Name="TxtDistPhone" Style="{StaticResource FormInputBox}" IsReadOnly="True" IsTabStop="False"/>
                     </Border>
                     <Border Grid.Row="5" Grid.Column="3" Style="{StaticResource FormLabelBorder}">
                         <TextBlock Text="Type" Style="{StaticResource FormLabelText}"/>
                     </Border>
                     <Border Grid.Row="5" Grid.Column="4" Style="{StaticResource FormInputBorder}">
-                        <TextBox x:Name="TxtDistType" Style="{StaticResource FormInputBox}"/>
+                        <TextBox x:Name="TxtDistType" Style="{StaticResource FormInputBox}" IsReadOnly="True" IsTabStop="False"/>
                     </Border>
                 </Grid>
 
@@ -293,37 +326,85 @@
             </Grid>
         </Border>
 
-        <!-- ══════════════ ROW 1: PURCHASE ITEMS DATAGRID ══════════════ -->
-        <DataGrid Grid.Row="1" x:Name="GridPurchaseItems"
-                  AutoGenerateColumns="False"
-                  CanUserAddRows="False"
-                  Background="#FFFFFF"
-                  BorderThickness="0"
-                  GridLinesVisibility="All"
-                  HorizontalGridLinesBrush="#E2E8F0"
-                  VerticalGridLinesBrush="#E2E8F0"
-                  RowHeight="27"
-                  FontSize="12.5"
-                  Foreground="#0F172A"
-                  SelectionUnit="Cell"
-                  SelectionMode="Single"
-                  CellEditEnding="GridPurchaseItems_CellEditEnding">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Sno" Binding="{Binding Sno}" Width="42" IsReadOnly="True"/>
-                <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="75" IsReadOnly="True"/>
-                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*" IsReadOnly="True"/>
-                <DataGridTextColumn Header="Qty" Binding="{Binding Qty, UpdateSourceTrigger=PropertyChanged}" Width="58"/>
-                <DataGridTextColumn Header="Free" Binding="{Binding Free, UpdateSourceTrigger=PropertyChanged}" Width="55"/>
-                <DataGridTextColumn Header="Pur.Rate" Binding="{Binding PurRate, StringFormat='{}{0:F2}', UpdateSourceTrigger=PropertyChanged}" Width="78"/>
-                <DataGridTextColumn Header="Batch" Binding="{Binding Batch}" Width="75"/>
-                <DataGridTextColumn Header="Exp Date" Binding="{Binding ExpDate}" Width="80"/>
-                <DataGridTextColumn Header="MRP" Binding="{Binding Mrp, StringFormat='{}{0:F2}'}" Width="70"/>
-                <DataGridTextColumn Header="Selling" Binding="{Binding Selling, StringFormat='{}{0:F2}'}" Width="70"/>
-                <DataGridTextColumn Header="Tstk" Binding="{Binding Tstk, StringFormat='{}{0:0.##}'}" Width="55" IsReadOnly="True"/>
-                <DataGridTextColumn Header="Amount" Binding="{Binding Amount, StringFormat='{}{0:F2}'}" Width="82" IsReadOnly="True"/>
-                <DataGridTextColumn Header="NetAmt" Binding="{Binding NetAmt, StringFormat='{}{0:F2}'}" Width="86" IsReadOnly="True"/>
-            </DataGrid.Columns>
-        </DataGrid>
+        <!-- ══════════════ ROW 1: BARCODE SCAN BAR + PURCHASE ITEMS DATAGRID ══════════════ -->
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Barcode Scan & Quick Item Bar -->
+            <Border Grid.Row="0" Background="#EEF2FF" BorderBrush="#CBD5E1" BorderThickness="0,0,0,1" Padding="8,5">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="240"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" Text="Scan Barcode / Code:" Foreground="#1E1B4B" FontWeight="Bold" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBox Grid.Column="1" x:Name="TxtScanBarcode" Height="27" Padding="7,3" BorderBrush="#4F46E5" BorderThickness="1.2"
+                             Background="#FFFFFF" Foreground="#0F172A" FontWeight="SemiBold" FontSize="12.5"
+                             PreviewKeyDown="TxtScanBarcode_PreviewKeyDown"/>
+
+                    <Button Grid.Column="2" Content="+ New Item (F2)" Background="#4F46E5" Foreground="#FFFFFF"
+                            FontWeight="Bold" FontSize="11.5" Height="27" Padding="12,0" Margin="10,0,0,0"
+                            BorderThickness="0" Cursor="Hand" Click="QuickAddItem_Click"/>
+
+                    <Button Grid.Column="3" Content="Pick Item (F1)" Background="#FFFFFF" Foreground="#334155"
+                            BorderBrush="#CBD5E1" BorderThickness="1" FontWeight="SemiBold" FontSize="11.5" Height="27" Padding="10,0"
+                            Margin="6,0,0,0" Cursor="Hand" Click="AddItem_Click"/>
+
+                    <Button Grid.Column="4" Content="Print Barcode (F8)" Background="#DBEAFE" Foreground="#1E40AF"
+                            BorderBrush="#93C5FD" BorderThickness="1" FontWeight="Bold" FontSize="11.5" Height="27" Padding="12,0"
+                            Margin="6,0,0,0" Cursor="Hand" Click="PrintBarcodes_Click"/>
+
+                    <TextBlock Grid.Column="5" Text="Scan branded barcode OR press F2 to add local shirt (auto-barcode + Size + HSN)"
+                               Foreground="#4338CA" FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis"/>
+                </Grid>
+            </Border>
+
+            <DataGrid Grid.Row="1" x:Name="GridPurchaseItems"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserSortColumns="False"
+                      CanUserReorderColumns="False"
+                      CanUserResizeColumns="False"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                      Background="#FFFFFF"
+                      BorderThickness="0"
+                      GridLinesVisibility="All"
+                      HorizontalGridLinesBrush="#E2E8F0"
+                      VerticalGridLinesBrush="#E2E8F0"
+                      RowHeight="27"
+                      FontSize="12.5"
+                      Foreground="#0F172A"
+                      SelectionUnit="Cell"
+                      SelectionMode="Single"
+                      PreviewKeyDown="GridPurchaseItems_PreviewKeyDown"
+                      BeginningEdit="GridPurchaseItems_BeginningEdit"
+                      CellEditEnding="GridPurchaseItems_CellEditEnding">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Sno" Binding="{Binding Sno}" ElementStyle="{StaticResource CenterCellText}" CellStyle="{StaticResource DisableOnBlankCell}" Width="38" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Code" Binding="{Binding Code, UpdateSourceTrigger=PropertyChanged}" ElementStyle="{StaticResource CenterCellText}" Width="62"/>
+                    <DataGridTextColumn Header="Barcode" Binding="{Binding Barcode}" ElementStyle="{StaticResource CenterCellText}" CellStyle="{StaticResource DisableOnBlankCell}" Width="90" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Name" Binding="{Binding Name}" CellStyle="{StaticResource DisableOnBlankCell}" Width="*" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Size" Binding="{Binding Size}" ElementStyle="{StaticResource CenterCellText}" CellStyle="{StaticResource DisableOnBlankCell}" Width="48"/>
+                    <DataGridTextColumn Header="HSN" Binding="{Binding HsnCode}" ElementStyle="{StaticResource CenterCellText}" CellStyle="{StaticResource DisableOnBlankCell}" Width="64"/>
+                    <DataGridTextColumn Header="Qty" Binding="{Binding Qty, UpdateSourceTrigger=PropertyChanged}" ElementStyle="{StaticResource HideOnBlankText}" CellStyle="{StaticResource DisableOnBlankCell}" Width="48"/>
+                    <DataGridTextColumn Header="Free" Binding="{Binding Free, UpdateSourceTrigger=PropertyChanged}" ElementStyle="{StaticResource HideOnBlankText}" CellStyle="{StaticResource DisableOnBlankCell}" Width="46"/>
+                    <DataGridTextColumn Header="Pur.Rate" Binding="{Binding PurRate, StringFormat='{}{0:F2}', UpdateSourceTrigger=PropertyChanged}" ElementStyle="{StaticResource HideOnBlankText}" CellStyle="{StaticResource DisableOnBlankCell}" Width="70"/>
+                    <DataGridTextColumn Header="MRP" Binding="{Binding Mrp, StringFormat='{}{0:F2}'}" ElementStyle="{StaticResource HideOnBlankText}" CellStyle="{StaticResource DisableOnBlankCell}" Width="64"/>
+                    <DataGridTextColumn Header="Selling" Binding="{Binding Selling, StringFormat='{}{0:F2}'}" ElementStyle="{StaticResource HideOnBlankText}" CellStyle="{StaticResource DisableOnBlankCell}" Width="66"/>
+                    <DataGridTextColumn Header="Tax" Binding="{Binding GstPct, StringFormat='{}{0:0.##}%'}" ElementStyle="{StaticResource HideOnBlankCenterText}" CellStyle="{StaticResource DisableOnBlankCell}" Width="52" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="Amount" Binding="{Binding Amount, StringFormat='{}{0:F2}'}" ElementStyle="{StaticResource HideOnBlankText}" CellStyle="{StaticResource DisableOnBlankCell}" Width="74" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="NetAmt" Binding="{Binding NetAmt, StringFormat='{}{0:F2}'}" ElementStyle="{StaticResource HideOnBlankText}" CellStyle="{StaticResource DisableOnBlankCell}" Width="78" IsReadOnly="True"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
 
         <!-- ══════════════ ROW 2: LOWER SUMMARY STRIP + NARRATION ══════════════ -->
         <Border Grid.Row="2" Background="#FFFFFF" BorderBrush="#94A3B8" BorderThickness="0,1,0,1">
@@ -509,5 +590,10 @@
                                              VerticalAlignment="Bottom"
                                              Margin="0,0,10,48"
                                              Visibility="Collapsed"/>
+
+        <!-- Quick Add Local/Branded Item Overlay (F2) -->
+        <components:QuickAddPurchaseItemOverlay x:Name="QuickAddItemOverlay"
+                                                Grid.RowSpan="4"
+                                                Visibility="Collapsed"/>
     </Grid>
 </UserControl>

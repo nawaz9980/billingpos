@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,7 +14,8 @@ public partial class DistributorsScreen : UserControl
     public event EventHandler? CloseRequested;
 
     private int _editingId;
-    private Control[] _detailsTabOrder = [];
+    private string _editingCode = string.Empty;
+    private readonly Control[] _detailsTabOrder;
 
     public DistributorsScreen()
     {
@@ -23,9 +23,7 @@ public partial class DistributorsScreen : UserControl
 
         _detailsTabOrder =
         [
-            TxtCode, TxtName, TxtShortName, TxtLocation, TxtLandmark, TxtCity,
-            CmbState, CmbCountry, TxtPinCode, TxtTelOffice, TxtPhone, TxtEmail,
-            TxtFax, CmbType, CmbCurrency, TxtTelRes, TxtDistributorId, TxtArea, TxtBarcodeAlias
+            TxtName, TxtAddress, TxtPhone, TxtEmail, CmbType
         ];
 
         DistLookupOverlay.DistributorSelected += LoadForEdit;
@@ -35,8 +33,10 @@ public partial class DistributorsScreen : UserControl
     private void UserControl_Loaded(object sender, RoutedEventArgs e)
     {
         UpdateCount();
-        if (_editingId == 0 && string.IsNullOrWhiteSpace(TxtCode.Text))
+        if (_editingId == 0)
             ResetForm();
+        else
+            TxtName.Focus();
     }
 
     private void UpdateCount()
@@ -81,14 +81,6 @@ public partial class DistributorsScreen : UserControl
                 Clear_Click(this, new RoutedEventArgs());
                 e.Handled = true;
                 break;
-            case Key.F8:
-                Skip_Click(this, new RoutedEventArgs());
-                e.Handled = true;
-                break;
-            case Key.F9:
-                Default_Click(this, new RoutedEventArgs());
-                e.Handled = true;
-                break;
             case Key.F10:
                 Delete_Click(this, new RoutedEventArgs());
                 e.Handled = true;
@@ -113,7 +105,6 @@ public partial class DistributorsScreen : UserControl
         var focused = Keyboard.FocusedElement as DependencyObject;
         if (focused == null) return false;
 
-        // Details tab order
         for (int i = 0; i < _detailsTabOrder.Length; i++)
         {
             if (IsInside(focused, _detailsTabOrder[i]))
@@ -126,26 +117,16 @@ public partial class DistributorsScreen : UserControl
                 else
                 {
                     MainTabs.SelectedIndex = 1;
-                    Dispatcher.InvokeAsync(() => TxtContactPerson.Focus());
+                    Dispatcher.InvokeAsync(() => TxtGstNo.Focus());
                 }
                 return true;
             }
         }
 
-        // Contact tab
-        if (IsInside(focused, TxtContactPerson)) { TxtAddress.Focus(); return true; }
-        if (IsInside(focused, TxtAddress)) { TxtComments.Focus(); return true; }
-
-        // GST tab
+        // GST tab order
         if (IsInside(focused, TxtGstNo)) { TxtPanNo.Focus(); return true; }
         if (IsInside(focused, TxtPanNo)) { CmbGstRegType.Focus(); return true; }
         if (IsInside(focused, CmbGstRegType)) { TxtCreditDays.Focus(); TxtCreditDays.SelectAll(); return true; }
-        if (IsInside(focused, TxtCreditDays))
-        {
-            MainTabs.SelectedIndex = 3;
-            Dispatcher.InvokeAsync(() => ChkMon.Focus());
-            return true;
-        }
 
         return false;
     }
@@ -163,39 +144,21 @@ public partial class DistributorsScreen : UserControl
     private void ResetForm()
     {
         _editingId = 0;
+        _editingCode = string.Empty;
         MainTabs.SelectedIndex = 0;
 
-        TxtCode.Text = DatabaseService.GetNextDistributorCode();
+        TxtCode.Text = "(Auto-generated on Save)";
         TxtName.Text = string.Empty;
-        TxtShortName.Text = string.Empty;
-        TxtLocation.Text = string.Empty;
-        TxtLandmark.Text = string.Empty;
-        TxtCity.Text = string.Empty;
-        CmbState.Text = string.Empty;
-        CmbCountry.Text = "India";
-        TxtPinCode.Text = string.Empty;
-        TxtTelOffice.Text = string.Empty;
+        TxtAddress.Text = string.Empty;
         TxtPhone.Text = string.Empty;
         TxtEmail.Text = string.Empty;
-        TxtFax.Text = string.Empty;
         CmbType.SelectedIndex = 0;
-        CmbCurrency.Text = "INR";
-        TxtTelRes.Text = string.Empty;
-        TxtDistributorId.Text = string.Empty;
-        TxtArea.Text = string.Empty;
-        TxtBarcodeAlias.Text = string.Empty;
-
-        TxtContactPerson.Text = string.Empty;
-        TxtAddress.Text = string.Empty;
         TxtComments.Text = string.Empty;
 
         TxtGstNo.Text = string.Empty;
         TxtPanNo.Text = string.Empty;
         CmbGstRegType.SelectedIndex = 0;
         TxtCreditDays.Text = "0";
-
-        ChkMon.IsChecked = ChkTue.IsChecked = ChkWed.IsChecked = ChkThu.IsChecked =
-            ChkFri.IsChecked = ChkSat.IsChecked = ChkSun.IsChecked = false;
 
         ModeBanner.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4F46E5"));
         TxtModeBanner.Text = "(Mode - new) : Creating new record";
@@ -206,45 +169,21 @@ public partial class DistributorsScreen : UserControl
     private void LoadForEdit(DatabaseService.DistributorRecord d)
     {
         _editingId = d.Id;
+        _editingCode = d.Code;
         MainTabs.SelectedIndex = 0;
 
         TxtCode.Text = d.Code;
         TxtName.Text = d.Name;
-        TxtShortName.Text = d.ShortName;
-        TxtLocation.Text = d.Location;
-        TxtLandmark.Text = d.Landmark;
-        TxtCity.Text = d.City;
-        CmbState.Text = d.State;
-        CmbCountry.Text = string.IsNullOrWhiteSpace(d.Country) ? "India" : d.Country;
-        TxtPinCode.Text = d.PinCode;
-        TxtTelOffice.Text = d.TelOffice;
+        TxtAddress.Text = d.Address;
         TxtPhone.Text = d.Phone;
         TxtEmail.Text = d.Email;
-        TxtFax.Text = d.Fax;
         SelectComboText(CmbType, d.DistType);
-        CmbCurrency.Text = string.IsNullOrWhiteSpace(d.CurrencyName) ? "INR" : d.CurrencyName;
-        TxtTelRes.Text = d.TelRes;
-        TxtDistributorId.Text = d.DistributorId;
-        TxtArea.Text = d.Area;
-        TxtBarcodeAlias.Text = d.BarcodeAlias;
-
-        TxtContactPerson.Text = d.ContactPerson;
-        TxtAddress.Text = d.Address;
         TxtComments.Text = d.Comments;
 
         TxtGstNo.Text = d.GstNo;
         TxtPanNo.Text = d.PanNo;
         SelectComboText(CmbGstRegType, d.GstRegType);
         TxtCreditDays.Text = d.CreditDays.ToString();
-
-        var days = (d.OrderDays ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        ChkMon.IsChecked = days.Contains("Mon", StringComparer.OrdinalIgnoreCase);
-        ChkTue.IsChecked = days.Contains("Tue", StringComparer.OrdinalIgnoreCase);
-        ChkWed.IsChecked = days.Contains("Wed", StringComparer.OrdinalIgnoreCase);
-        ChkThu.IsChecked = days.Contains("Thu", StringComparer.OrdinalIgnoreCase);
-        ChkFri.IsChecked = days.Contains("Fri", StringComparer.OrdinalIgnoreCase);
-        ChkSat.IsChecked = days.Contains("Sat", StringComparer.OrdinalIgnoreCase);
-        ChkSun.IsChecked = days.Contains("Sun", StringComparer.OrdinalIgnoreCase);
 
         ModeBanner.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2563EB"));
         TxtModeBanner.Text = $"(Mode - edit) : Editing {d.Code} - {d.Name}";
@@ -265,93 +204,78 @@ public partial class DistributorsScreen : UserControl
         cmb.SelectedIndex = 0;
     }
 
-    private string BuildOrderDays()
-    {
-        var days = new List<string>();
-        if (ChkMon.IsChecked == true) days.Add("Mon");
-        if (ChkTue.IsChecked == true) days.Add("Tue");
-        if (ChkWed.IsChecked == true) days.Add("Wed");
-        if (ChkThu.IsChecked == true) days.Add("Thu");
-        if (ChkFri.IsChecked == true) days.Add("Fri");
-        if (ChkSat.IsChecked == true) days.Add("Sat");
-        if (ChkSun.IsChecked == true) days.Add("Sun");
-        return string.Join(",", days);
-    }
-
-    private string BuildDisplayAddress()
-    {
-        if (!string.IsNullOrWhiteSpace(TxtAddress.Text))
-            return TxtAddress.Text.Trim();
-
-        var parts = new[] { TxtLocation.Text, TxtLandmark.Text, TxtCity.Text, CmbState.Text, TxtPinCode.Text }
-            .Select(s => s?.Trim())
-            .Where(s => !string.IsNullOrWhiteSpace(s));
-        return string.Join(", ", parts);
-    }
-
     private void Save_Click(object sender, RoutedEventArgs e)
     {
-        string code = TxtCode.Text.Trim();
         string name = TxtName.Text.Trim();
-
-        if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(name))
+        if (string.IsNullOrEmpty(name))
         {
-            MessageBox.Show("Please enter required fields: * Code and * Name.", "Distributor Master",
+            MessageBox.Show("Please enter required field: * Name.", "Distributor Master",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             MainTabs.SelectedIndex = 0;
-            if (string.IsNullOrEmpty(code)) TxtCode.Focus(); else TxtName.Focus();
+            TxtName.Focus();
             return;
         }
 
+        bool isEdit = _editingId > 0;
+        string code = isEdit ? _editingCode : DatabaseService.GetNextDistributorCode();
         int.TryParse(TxtCreditDays.Text.Trim(), out int creditDays);
+        string distType = (CmbType.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Local";
+        string gstRegType = (CmbGstRegType.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Regular";
+
+        string summary =
+            $"Code: {code}\n" +
+            $"Name: {name}\n" +
+            $"Address1: {(string.IsNullOrWhiteSpace(TxtAddress.Text) ? "-" : TxtAddress.Text.Trim())}\n" +
+            $"Mobile: {(string.IsNullOrWhiteSpace(TxtPhone.Text) ? "-" : TxtPhone.Text.Trim())}\n" +
+            $"Email: {(string.IsNullOrWhiteSpace(TxtEmail.Text) ? "-" : TxtEmail.Text.Trim())}\n" +
+            $"Type: {distType}\n" +
+            $"GSTIN: {(string.IsNullOrWhiteSpace(TxtGstNo.Text) ? "-" : TxtGstNo.Text.Trim())}\n" +
+            $"PAN: {(string.IsNullOrWhiteSpace(TxtPanNo.Text) ? "-" : TxtPanNo.Text.Trim())}\n" +
+            $"GST Reg. Type: {gstRegType}\n" +
+            $"Credit Days: {creditDays}";
+
+        var confirm = MessageBox.Show(
+            $"{(isEdit ? "Confirm updating distributor:" : "Confirm saving new distributor:")}\n\n{summary}",
+            "Confirm Distributor Details",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (confirm != MessageBoxResult.Yes)
+            return;
 
         var record = new DatabaseService.DistributorRecord
         {
             Id = _editingId,
             Code = code,
             Name = name,
-            ShortName = TxtShortName.Text,
-            Location = TxtLocation.Text,
-            Landmark = TxtLandmark.Text,
-            City = TxtCity.Text,
-            State = CmbState.Text,
-            Country = CmbCountry.Text,
-            PinCode = TxtPinCode.Text,
-            TelOffice = TxtTelOffice.Text,
+            Address = TxtAddress.Text,
             Phone = TxtPhone.Text,
             Email = TxtEmail.Text,
-            Fax = TxtFax.Text,
-            DistType = (CmbType.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "None",
-            CurrencyName = CmbCurrency.Text,
-            TelRes = TxtTelRes.Text,
-            DistributorId = TxtDistributorId.Text,
-            Area = TxtArea.Text,
-            BarcodeAlias = TxtBarcodeAlias.Text,
-            ContactPerson = TxtContactPerson.Text,
-            Address = BuildDisplayAddress(),
+            DistType = distType,
             Comments = TxtComments.Text,
             GstNo = TxtGstNo.Text,
             PanNo = TxtPanNo.Text,
-            GstRegType = (CmbGstRegType.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Regular",
-            CreditDays = creditDays,
-            OrderDays = BuildOrderDays()
+            GstRegType = gstRegType,
+            CreditDays = creditDays
         };
 
         try
         {
-            bool wasEdit = _editingId > 0;
             DatabaseService.SaveDistributor(record);
             ResetForm();
             UpdateCount();
-            MessageBox.Show(wasEdit ? "Distributor updated successfully." : "Distributor created successfully.",
-                "Distributor Master", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(
+                isEdit
+                    ? $"Distributor {code} ({name}) updated successfully."
+                    : $"Distributor {code} ({name}) created successfully.",
+                "Distributor Master",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
         }
         catch (SqliteException ex) when (ex.SqliteErrorCode == 19)
         {
-            MessageBox.Show($"Distributor code '{code}' already exists. Please use a unique code.",
+            MessageBox.Show($"Distributor code '{code}' already exists.",
                 "Distributor Master", MessageBoxButton.OK, MessageBoxImage.Warning);
-            MainTabs.SelectedIndex = 0;
-            TxtCode.Focus();
         }
     }
 
@@ -362,7 +286,7 @@ public partial class DistributorsScreen : UserControl
             "• Enter : Move to next field\n" +
             "• F3 : New record\n" +
             "• F4 / F5 : View & Pick existing distributor to Edit\n" +
-            "• F6 : Save distributor\n" +
+            "• F6 : Save distributor (auto-generates Code)\n" +
             "• F7 : Clear form\n" +
             "• F10 : Delete (in Edit mode)\n" +
             "• F11 : Jump to Comments\n" +
@@ -373,20 +297,10 @@ public partial class DistributorsScreen : UserControl
     private void New_Click(object sender, RoutedEventArgs e) => ResetForm();
     private void Clear_Click(object sender, RoutedEventArgs e) => ResetForm();
     private void EditPick_Click(object sender, RoutedEventArgs e) => DistLookupOverlay.Show();
-    private void Skip_Click(object sender, RoutedEventArgs e) => HandleEnterNavigation();
-
-    private void Default_Click(object sender, RoutedEventArgs e)
-    {
-        CmbCountry.Text = "India";
-        CmbCurrency.Text = "INR";
-        CmbType.SelectedIndex = 1; // Local
-        CmbGstRegType.SelectedIndex = 0; // Regular
-        TxtCreditDays.Text = "0";
-    }
 
     private void Comments_Click(object sender, RoutedEventArgs e)
     {
-        MainTabs.SelectedIndex = 1;
+        MainTabs.SelectedIndex = 0;
         Dispatcher.InvokeAsync(() => TxtComments.Focus());
     }
 
@@ -394,7 +308,7 @@ public partial class DistributorsScreen : UserControl
     {
         if (_editingId <= 0) return;
 
-        var res = MessageBox.Show($"Delete distributor '{TxtName.Text.Trim()}' ({TxtCode.Text.Trim()})?",
+        var res = MessageBox.Show($"Delete distributor '{TxtName.Text.Trim()}' ({_editingCode})?",
             "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (res != MessageBoxResult.Yes) return;
 

@@ -104,13 +104,15 @@
                       SelectionChanged="GridProducts_SelectionChanged"
                       MouseDoubleClick="GridProducts_MouseDoubleClick">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Sno" Binding="{Binding Sno}" Width="50"/>
+                    <DataGridTextColumn Header="Sno" Binding="{Binding Sno}" Width="45"/>
                     <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*"/>
-                    <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="75"/>
-                    <DataGridTextColumn Header="Alias" Binding="{Binding Alias}" Width="120"/>
-                    <DataGridTextColumn Header="Stock" Binding="{Binding Stock, StringFormat='{}{0:F2}'}" Width="85"/>
-                    <DataGridTextColumn Header="Landing" Binding="{Binding Rate, StringFormat='{}{0:F2}'}" Width="95"/>
-                    <DataGridTextColumn Header="GST" Binding="{Binding Gst}" Width="65"/>
+                    <DataGridTextColumn Header="Size" Binding="{Binding Size}" Width="55"/>
+                    <DataGridTextColumn Header="HSN" Binding="{Binding HsnCode}" Width="65"/>
+                    <DataGridTextColumn Header="Barcode" Binding="{Binding Barcode}" Width="105"/>
+                    <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="65"/>
+                    <DataGridTextColumn Header="Stock" Binding="{Binding Stock, StringFormat='{}{0:F2}'}" Width="75"/>
+                    <DataGridTextColumn Header="Landing" Binding="{Binding Rate, StringFormat='{}{0:F2}'}" Width="80"/>
+                    <DataGridTextColumn Header="GST" Binding="{Binding Gst}" Width="55"/>
                 </DataGrid.Columns>
             </DataGrid>
 
